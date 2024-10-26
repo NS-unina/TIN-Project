@@ -1,0 +1,10 @@
+
+    Vagrant.configure("2") do |config|
+        config.vm.box = "nrclark/xenial64-minimal-libvirt"
+
+        config.vm.provider "libvirt" do |lib|
+            lib.memory = 1024
+            lib.cpus = 2
+        end
+    end
+    

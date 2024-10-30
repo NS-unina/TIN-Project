@@ -2,7 +2,6 @@ from flask import Flask, request, jsonify
 import vagrant
 import os
 import shutil
-import subprocess
 
 app = Flask (__name__)
 
@@ -20,12 +19,17 @@ def create_vagrantfile(vm_name, cpus, ram):
     #Contenuto vagrantfile
     vagrantfile_content= f"""
     Vagrant.configure("2") do |config|
-        config.vm.box = "nrclark/xenial64-minimal-libvirt"
+        config.vm.box = "generic/ubuntu2004"
 
         config.vm.provider "libvirt" do |lib|
             lib.memory = {ram}
             lib.cpus = {cpus}
         end
+    
+        config.vm.provision "shell", path: "../init_vm.sh"
+        config.vm.provision "docker"
+        config.vm.provision "file", source: "../app.py", destination: "app.py"
+
     end
     """
 
@@ -65,7 +69,6 @@ def delete_vm(vm_name):
 
     if not os.path.exists(vm_path):
         return jsonify({"error": f"VM '{vm_name}' doesn't exist"}), 404
-
 
     try:
         v = vagrant.Vagrant(vm_path)

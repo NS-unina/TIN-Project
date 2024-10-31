@@ -1,4 +1,4 @@
-#!/home/marika/Scrivania/server_flask_prova1/server_flask/bin/python3
+#!/home/marika/Scrivania/server_flask_prova/server_flask/bin/python3
 # -*- coding: utf-8 -*-
 import re
 import sys

@@ -1,0 +1,15 @@
+
+    Vagrant.configure("2") do |config|
+        config.vm.box = "generic/ubuntu2004"
+
+        config.vm.provider "libvirt" do |lib|
+            lib.memory = 1024
+            lib.cpus = 2
+        end
+    
+        config.vm.provision "shell", path: "../init_vm.sh"
+        config.vm.provision "docker"
+        config.vm.provision "file", source: "../app.py", destination: "app.py"
+
+    end
+    

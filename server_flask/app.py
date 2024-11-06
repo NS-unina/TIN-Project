@@ -43,11 +43,10 @@ def create_vagrantfile(vm_name, cpus, ram):
 
 
 #test for UI - to be removed 
+#------------------------------
 @app.route('/ping',methods=['GET'])
 def ping_pong():
     return jsonify('pong!')
-
-
 
 VM_list = [
     {
@@ -60,14 +59,14 @@ VM_list = [
     },
     
 ]
+#------------------------------
 
 
-
-@app.route('/books', methods=['GET'])
-def all_books():
+@app.route('/vmlist', methods=['GET'])
+def all_vms():
     return jsonify({
         'status': 'success',
-        'books': VM_list
+        'vms': VM_list
     })
 
 

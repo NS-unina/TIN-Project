@@ -7,7 +7,7 @@
         <button
         type="button"
         class="btn btn-success btn-sm"
-        @click="toggleAddBookModal">
+        @click="toggleAddVmModal">
         Add VM
         </button>
         <br><br>
@@ -21,17 +21,22 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(book, index) in books" :key="index">
-              <td>{{ book.name}}</td>
-              <td>{{ book.status}}</td>
+            <tr v-for="(vm, index) in vms" :key="index">
+              <td>{{ vm.name}}</td>
+              <td>{{ vm.status}}</td>
               <td>
-                <span v-if="book.read">Yes</span>
+                <span v-if="vm.read">Yes</span>
                 <span v-else>No</span>
               </td>
               <td>
                 <div class="btn-group" role="group">
                   <button type="button" class="btn btn-warning btn-sm">Update</button>
-                  <button type="button" class="btn btn-danger btn-sm">Delete</button>
+                  <button
+                    type="button"
+                    class="btn btn-danger btn-sm"
+                    @click="handleDeleteVm(vm)">
+                    Delete
+                  </button>
                 </div>
               </td>
             </tr>
@@ -40,11 +45,11 @@
       </div>
     </div>
 
-<!-- add new book modal -->
+<!-- add new vm modal -->
 <div
-ref="addBookModal"
+ref="addVmModal"
 class="modal fade"
-:class="{ show: activeAddBookModal, 'd-block': activeAddBookModal }"
+:class="{ show: activeAddVmModal, 'd-block': activeAddVmModal }"
 tabindex="-1"
 role="dialog">
 <div class="modal-dialog" role="document">
@@ -56,7 +61,7 @@ role="dialog">
         class="close"
         data-dismiss="modal"
         aria-label="Close"
-        @click="toggleAddBookModal">
+        @click="toggleAddVmModal">
         <span aria-hidden="true">&times;</span>
       </button>
     </div>
@@ -109,7 +114,7 @@ role="dialog">
   </div>
 </div>
 </div>
-<div v-if="activeAddBookModal" class="modal-backdrop fade show"></div>
+<div v-if="activeAddVmModal" class="modal-backdrop fade show"></div>
 
   </div>
 </template>
@@ -120,33 +125,34 @@ import axios from 'axios';
 export default {
   data() {
     return {
-      activeAddBookModal: false,
+      activeAddVmModal: false,
       addVMForm: {
         name: '',
         cpu: '',
         ram: '',
       },
-      books: [],
+      vms: [],
     };
   },
   methods: {
-    addBook(payload) {
-      const path = 'http://localhost:5000/books';
+    
+    addVm(payload) {
+      const path = 'http://localhost:5000/vmlist';
       axios.post(path, payload)
         .then(() => {
-          this.getBooks();
+          this.getVMs();
         })
         .catch((error) => {
 
           console.log(error);
-          this.getBooks();
+          this.getVMs();
         });
     },
-    getBooks() {
-      const path = 'http://localhost:5000/books';
+    getVMs() {
+      const path = 'http://localhost:5000/vmlist';
       axios.get(path)
         .then((res) => {
-          this.books = res.data.books;
+          this.vms = res.data.vms;
         })
         .catch((error) => {
 
@@ -157,7 +163,7 @@ export default {
       this.initForm();
     },
     handleAddSubmit() {
-      this.toggleAddBookModal();
+      this.toggleAddVmModal();
       // let read = false;
       // if (this.addVMForm.read[0]) {
       //   read = true;
@@ -167,7 +173,7 @@ export default {
         cpu: this.addVMForm.cpu,
         ram: this.addVMForm.ram,
       };
-      this.addBook(payload);
+      this.addVm(payload);
       this.initForm();
     },
     initForm() {
@@ -175,18 +181,36 @@ export default {
       this.addVMForm.cpu = '';
       this.addVMForm.ram = '';
     },
-    toggleAddBookModal() {
+    toggleAddVmModal() {
       const body = document.querySelector('body');
-      this.activeAddBookModal = !this.activeAddBookModal;
-      if (this.activeAddBookModal) {
+      this.activeAddVmModal = !this.activeAddVmModal;
+      if (this.activeAddVmModal) {
         body.classList.add('modal-open');
       } else {
         body.classList.remove('modal-open');
       }
     },
+    handleDeleteVm(vm) {
+      this.removeVm(vm.name);
+    },
+    removeVm(vmID) {
+      const path = `http://localhost:5000/delete/${vmID}`;
+      axios.delete(path)
+        .then(() => {
+          this.getVMs();
+          this.message = 'Vm removed!';
+          this.showMessage = true;
+        })
+        .catch((error) => {
+          console.error(error);
+          thisMgetVms();
+        });
+    },
+
+
   },
   created() {
-    this.getBooks();
+    this.getVMs();
   },
 };
 </script>

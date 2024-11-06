@@ -78,11 +78,11 @@ def delete_vm(vm_name):
     except Exception:
         return jsonify({"error": "Error deleting vm"}), 500
 
-
+gir 
 @app.route('/read', methods=['GET'])
 def show_vm():
     
-    vm_statuses = {}
+    vm_statuses = []
     try:
         for vm_name in os.listdir(VM_PATH):
             vm_path = os.path.join(VM_PATH, vm_name)
@@ -90,10 +90,13 @@ def show_vm():
                 v = vagrant.Vagrant(vm_path)
                 status = v.status()
 
-                # Estrai lo stato e salvalo in un dizionario con il nome della VM
-                vm_statuses[vm_name] = {entry.name: entry.state for entry in status}
+                for entry in status:
+                    vm_statuses.append({
+                        "name": vm_name,
+                        "status": entry.state
+                    })
         
-        return jsonify({"vm_statuses": vm_statuses}), 200
+        return jsonify(vm_statuses), 200
         
     except Exception:
         return jsonify({"error": "Error in reading vms status"}), 500

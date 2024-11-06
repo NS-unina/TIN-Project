@@ -78,7 +78,7 @@ def delete_vm(vm_name):
     except Exception:
         return jsonify({"error": "Error deleting vm"}), 500
 
-gir 
+
 @app.route('/read', methods=['GET'])
 def show_vm():
     

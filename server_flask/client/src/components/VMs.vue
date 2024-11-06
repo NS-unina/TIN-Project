@@ -16,18 +16,18 @@
             <tr>
               <th scope="col">Name</th>
               <th scope="col">Status</th>
-              <th scope="col">?</th>
+              <th scope="col">Action</th>
+              <th scope="col">Containers</th>
               <th></th>
             </tr>
           </thead>
+
           <tbody>
             <tr v-for="(vm, index) in vms" :key="index">
               <td>{{ vm.name}}</td>
               <td>{{ vm.status}}</td>
-              <td>
-                <span v-if="vm.read">Yes</span>
-                <span v-else>No</span>
-              </td>
+              
+              
               <td>
                 <div class="btn-group" role="group">
                   <button type="button" class="btn btn-warning btn-sm">Update</button>
@@ -39,7 +39,38 @@
                   </button>
                 </div>
               </td>
+              
+              <!-- Placeholder for Container Info-->
+              <td>
+
+                <button
+                  type="button"
+                  class="btn btn-success btn-sm"
+                  @click="toggleAddContainerModal">
+                  Add Container
+                </button>
+
+                <br><br>
+
+                <tr v-for="(vm, index) in vms" :key="index">
+                <td>{{ vm.name}}</td>
+                <td>
+                <div class="btn-group" role="group">
+                  <button type="button" class="btn btn-warning btn-sm">Update</button>
+                  <button
+                    type="button"
+                    class="btn btn-danger btn-sm"
+                    @click="handleDeleteVm(vm)">
+                    Delete
+                  </button>
+                </div>
+              </td>
+                </tr>
+              </td>
             </tr>
+
+            
+
           </tbody>
         </table>
       </div>

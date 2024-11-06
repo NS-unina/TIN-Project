@@ -1,9 +1,13 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import vagrant
 import os
 import shutil
 
 app = Flask (__name__)
+app.config.from_object(__name__)
+
+CORS(app,resources={r'/*':{'origins':'*'}})
 
 #Directory dove creare le vm
 VM_PATH = './vm'
@@ -36,6 +40,37 @@ def create_vagrantfile(vm_name, cpus, ram):
     with open(os.path.join(vm_path, 'Vagrantfile'), 'w') as vagrant_file:
         vagrant_file.write(vagrantfile_content)
     return vm_path
+
+
+#test for UI - to be removed 
+@app.route('/ping',methods=['GET'])
+def ping_pong():
+    return jsonify('pong!')
+
+
+
+VM_list = [
+    {
+        'name': 'vm1',
+        'status': 'poweroff',
+    },
+    {
+        'name': 'vm2',
+        'status': 'poweroff',
+    },
+    
+]
+
+
+
+@app.route('/books', methods=['GET'])
+def all_books():
+    return jsonify({
+        'status': 'success',
+        'books': VM_list
+    })
+
+
 
 
 @app.route('/create', methods=['POST'])
@@ -82,7 +117,7 @@ def delete_vm(vm_name):
 @app.route('/read', methods=['GET'])
 def show_vm():
     
-    vm_statuses = {}
+    vm_statuses = []
     try:
         for vm_name in os.listdir(VM_PATH):
             vm_path = os.path.join(VM_PATH, vm_name)
@@ -90,10 +125,13 @@ def show_vm():
                 v = vagrant.Vagrant(vm_path)
                 status = v.status()
 
-                # Estrai lo stato e salvalo in un dizionario con il nome della VM
-                vm_statuses[vm_name] = {entry.name: entry.state for entry in status}
+                for entry in status:
+                    vm_statuses.append({
+                        "name": vm_name,
+                        "status": entry.state
+                    })
         
-        return jsonify({"vm_statuses": vm_statuses}), 200
+        return jsonify(vm_statuses), 200
         
     except Exception:
         return jsonify({"error": "Error in reading vms status"}), 500

@@ -2,8 +2,7 @@
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,vue,flask,vagrant,vuejs
 
 ### VMs ###
-server_flask/vm/my_vm
-server_flask/vm/my_vm2
+server_flask/vm/*/
 
 ### Flask ###
 instance/*

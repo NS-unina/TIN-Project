@@ -4,7 +4,7 @@
 ### VMs ###
 server_flask/vm/*/
 
-server_flask/pyvenv.cfg
+*.cfg
 
 ### Flask ###
 instance/*

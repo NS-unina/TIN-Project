@@ -125,6 +125,26 @@ role="dialog">
             v-model="addVMForm.ram"
             placeholder="Enter RAM (MB)">
         </div>
+
+        <div class="mb-3">
+          <label for="addVMIP" class="form-label">IP:</label>
+          <input
+            type="text"
+            class="form-control"
+            id="addVMIP"
+            v-model="addVMForm.ip"
+            placeholder="Enter IP address">
+        </div>
+
+        <div class="mb-3">
+          <label for="addVMInterface" class="form-label">Interface:</label>
+          <input
+            type="text"
+            class="form-control"
+            id="addVMInterface"
+            v-model="addVMForm.int"
+            placeholder="Enter name of Tap interface (Tap0, Tap1 ...)">
+        </div>
         
         <div class="btn-group" role="group">
           <button
@@ -161,6 +181,8 @@ export default {
         name: '',
         cpu: '',
         ram: '',
+        ip:'',
+        int:''
       },
       vms: [],
     };
@@ -203,6 +225,8 @@ export default {
         name: this.addVMForm.name,
         cpu: this.addVMForm.cpu,
         ram: this.addVMForm.ram,
+        ip: this.addVMForm.ip,
+        int:this.addVMForm.int
       };
       this.addVm(payload);
       this.initForm();
@@ -211,6 +235,8 @@ export default {
       this.addVMForm.name = '';
       this.addVMForm.cpu = '';
       this.addVMForm.ram = '';
+      this.addVMForm.ip='';
+      this.addVMForm.int='';
     },
     toggleAddVmModal() {
       const body = document.querySelector('body');

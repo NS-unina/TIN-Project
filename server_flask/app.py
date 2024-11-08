@@ -25,13 +25,13 @@ def create_vagrantfile(vm_name, cpus, ram):
     Vagrant.configure("2") do |config|
         config.vm.box = "generic/ubuntu2004"
 
-        config.vm.provider "libvirt" do |lib|
-            lib.memory = {ram}
-            lib.cpus = {cpus}
+        config.vm.provider "virtualbox" do |vb|
+            vb.memory = {ram}
+            vb.cpus = {cpus}
         end
     
         config.vm.provision "shell", path: "../init_vm.sh"
-        config.vm.provision "docker"
+        #config.vm.provision "docker"
         config.vm.provision "file", source: "../app.py", destination: "app.py"
 
     end
@@ -44,30 +44,30 @@ def create_vagrantfile(vm_name, cpus, ram):
 
 #test for UI - to be removed 
 #------------------------------
-@app.route('/ping',methods=['GET'])
-def ping_pong():
-    return jsonify('pong!')
+# @app.route('/ping',methods=['GET'])
+# def ping_pong():
+#     return jsonify('pong!')
 
-VM_list = [
-    {
-        'name': 'vm1',
-        'status': 'poweroff',
-    },
-    {
-        'name': 'vm2',
-        'status': 'poweroff',
-    },
+# VM_list = [
+#     {
+#         'name': 'vm1',
+#         'status': 'poweroff',
+#     },
+#     {
+#         'name': 'vm2',
+#         'status': 'poweroff',
+#     },
     
-]
-#------------------------------
+# ]
+# #------------------------------
 
 
-@app.route('/vmlist', methods=['GET'])
-def all_vms():
-    return jsonify({
-        'status': 'success',
-        'vms': VM_list
-    })
+# @app.route('/vmlist', methods=['GET'])
+# def all_vms():
+#     return jsonify({
+#         'status': 'success',
+#         'vms': VM_list
+#     })
 
 
 
@@ -116,6 +116,7 @@ def delete_vm(vm_name):
 @app.route('/read', methods=['GET'])
 def show_vm():
     
+    
     vm_statuses = []
     try:
         for vm_name in os.listdir(VM_PATH):
@@ -129,8 +130,10 @@ def show_vm():
                         "name": vm_name,
                         "status": entry.state
                     })
+                
         
-        return jsonify(vm_statuses), 200
+        response={"vms": vm_statuses}
+        return jsonify(response), 200
         
     except Exception:
         return jsonify({"error": "Error in reading vms status"}), 500

@@ -168,7 +168,7 @@ export default {
   methods: {
     
     addVm(payload) {
-      const path = 'http://localhost:5000/vmlist';
+      const path = 'http://localhost:5000/create';
       axios.post(path, payload)
         .then(() => {
           this.getVMs();
@@ -180,7 +180,7 @@ export default {
         });
     },
     getVMs() {
-      const path = 'http://localhost:5000/vmlist';
+      const path = 'http://localhost:5000/read';
       axios.get(path)
         .then((res) => {
           this.vms = res.data.vms;

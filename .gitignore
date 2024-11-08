@@ -15,7 +15,7 @@ instance/*
 __pycache__/
 *.py[cod]
 *$py.class
-pyvenv.cfg
+*.cfg
 
 # C extensions
 *.so

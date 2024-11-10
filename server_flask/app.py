@@ -1,16 +1,20 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import vagrant
 import os
 import shutil
 
 app = Flask (__name__)
+app.config.from_object(__name__)
+
+CORS(app,resources={r'/*':{'origins':'*'}})
 
 #Directory dove creare le vm
 VM_PATH = './vm'
 
 #Creazione vagrantfile
-def create_vagrantfile(vm_name, cpus, ram):
-    vm_path = os.path.join(VM_PATH, vm_name)
+def create_vagrantfile(name,box,cpus,ram,ip,tap):
+    vm_path = os.path.join(VM_PATH,name)
     
     if os.path.exists(vm_path):
         raise FileExistsError()
@@ -19,16 +23,20 @@ def create_vagrantfile(vm_name, cpus, ram):
     #Contenuto vagrantfile
     vagrantfile_content= f"""
     Vagrant.configure("2") do |config|
-        config.vm.box = "generic/ubuntu2004"
+        config.vm.box = "{box}"
 
-        config.vm.provider "libvirt" do |lib|
-            lib.memory = {ram}
-            lib.cpus = {cpus}
+        config.vm.provider "virtualbox" do |vb|
+            vb.memory = {ram}
+            vb.cpus = {cpus}
         end
     
         config.vm.provision "shell", path: "../init_vm.sh"
-        config.vm.provision "docker"
+        #config.vm.provision "docker"
         config.vm.provision "file", source: "../app.py", destination: "app.py"
+        
+        #network configuration
+        #config.vm.network :forwarded_port, guest: port_vm, host: port_host, id: port_id
+        config.vm.network "public_network", bridge: "{tap}", ip: "{ip}"
 
     end
     """
@@ -38,19 +46,35 @@ def create_vagrantfile(vm_name, cpus, ram):
     return vm_path
 
 
+
+
+
+
 @app.route('/create', methods=['POST'])
 def create_vm():
     data = request.json
     vm_name = data.get('name')
-    cpus = data.get('cpus', '2') #default 2 CPU
-    ram = data.get ('ram', 1024) #default 1024 MB
+    vm_box = data.get('box','generic/ubuntu2004')
+    vm_cpus = data.get('cpus', '2') #default 2 CPU
+    vm_ram = data.get ('ram', 1024) #default 1024 MB
+    vm_ip=data.get('ip')
+    vm_tap=data.get('int')
+
 
     if not vm_name:
         return jsonify({"error": "name field is needed"}), 400
+    
+    if not vm_ip:
+        return jsonify({"error": "ip field is needed"}), 400
+    
+    if not vm_tap:
+        return jsonify({"error": "tap field is needed"}), 400
+    
+
 
     # Controlla che non esiste già la vm
     try:
-        vm_path = create_vagrantfile(vm_name, cpus, ram)
+        vm_path = create_vagrantfile(vm_name,vm_box, vm_cpus, vm_ram,vm_ip,vm_tap)
     except FileExistsError as e:
         return jsonify({"error": f"VM '{vm_name}' already exist. To modify it use the update request."}), 400 
 
@@ -95,9 +119,11 @@ def show_vm():
                         "name": vm_name,
                         "status": entry.state
                     })
+    
         
-        return jsonify(vm_statuses), 200
-        
+        response={"vms": vm_statuses}
+        return jsonify(response), 200
+
     except Exception:
         return jsonify({"error": "Error in reading vms status"}), 500
 

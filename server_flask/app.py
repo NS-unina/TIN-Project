@@ -106,7 +106,6 @@ def delete_vm(vm_name):
 @app.route('/read', methods=['GET'])
 def show_vm():
     
-    
     vm_statuses = []
     try:
         for vm_name in os.listdir(VM_PATH):
@@ -120,11 +119,11 @@ def show_vm():
                         "name": vm_name,
                         "status": entry.state
                     })
-                
+    
         
         response={"vms": vm_statuses}
         return jsonify(response), 200
-        
+
     except Exception:
         return jsonify({"error": "Error in reading vms status"}), 500
 

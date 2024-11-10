@@ -232,6 +232,56 @@ def update_vm(vm_name):
 
 
 
+@app.route('/start/<vm_name>', methods=['POST'])
+def power_vm(vm_name):
+
+#Check if vm exist
+    vm_path = os.path.join(VM_PATH, vm_name)
+    if not os.path.exists(vm_path):
+        return jsonify({"error": f"VM '{vm_name}' doesn't exist"}), 404
+
+    try:
+        v = vagrant.Vagrant(vm_path)
+        v.up()
+        return jsonify({"message": f"VM '{vm_name}' successfully started!"}), 201
+    except Exception:
+        return jsonify({"error": "Error starting  vm"}), 500
+
+
+@app.route('/stop/<vm_name>', methods=['POST'])
+def power_vm(vm_name):
+
+#Check if vm exist
+    vm_path = os.path.join(VM_PATH, vm_name)
+    if not os.path.exists(vm_path):
+        return jsonify({"error": f"VM '{vm_name}' doesn't exist"}), 404
+
+    try:
+        v = vagrant.Vagrant(vm_path)
+        v.halt()
+        return jsonify({"message": f"VM '{vm_name}' successfully stopped!"}), 201
+    except Exception:
+        return jsonify({"error": "Error stopping  vm"}), 500
+
+
+
+@app.route('/reload/<vm_name>', methods=['POST'])
+def power_vm(vm_name):
+
+#Check if vm exist
+    vm_path = os.path.join(VM_PATH, vm_name)
+    if not os.path.exists(vm_path):
+        return jsonify({"error": f"VM '{vm_name}' doesn't exist"}), 404
+
+    try:
+        v = vagrant.Vagrant(vm_path)
+        v.reload()
+        return jsonify({"message": f"VM '{vm_name}' successfully reloaded!"}), 201
+    except Exception:
+        return jsonify({"error": "Error reloading  vm"}), 500
+
+
+
 
 if __name__ == '__main__':
     os.makedirs(VM_PATH, exist_ok=True)

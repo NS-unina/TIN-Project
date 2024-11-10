@@ -3,6 +3,7 @@ from flask_cors import CORS
 import vagrant
 import os
 import shutil
+import re
 
 app = Flask (__name__)
 app.config.from_object(__name__)
@@ -46,6 +47,70 @@ def create_vagrantfile(name,box,cpus,ram,ip,tap):
     return vm_path
 
 
+#Update CPU
+def update_cpu(cpu, vagrantfile_path):
+    
+    # Read the contents of the Vagrantfile
+    with open(vagrantfile_path, "r") as file:
+        vagrantfile_content = file.readlines()
+
+    new_cpu_value = "vb.cpus = " + cpu
+    # Modify the CPU line
+    for i, line in enumerate(vagrantfile_content):
+        if re.search(r'vb\.cpus\s*=\s*\d+', line):
+            vagrantfile_content[i] = re.sub(r'vb\.cpus\s*=\s*\d+', new_cpu_value, line)
+            break
+
+    # Write the updated contents back to the Vagrantfile
+    with open(vagrantfile_path, "w") as file:
+        file.writelines(vagrantfile_content)
+
+    print(f"CPU setting updated to {cpu} in Vagrantfile.")
+
+
+#Update RAM
+def update_ram(ram, vagrantfile_path):
+    
+    # Read the contents of the Vagrantfile
+    with open(vagrantfile_path, "r") as file:
+        vagrantfile_content = file.readlines()
+
+    new_memory_value = "vb.memory = " + ram
+    # Modify the memory line
+    for i, line in enumerate(vagrantfile_content):
+        if re.search(r'vb\.memory\s*=\s*\d+', line):
+            vagrantfile_content[i] = re.sub(r'vb\.memory\s*=\s*\d+', new_memory_value, line)
+            break
+
+    # Write the updated contents back to the Vagrantfile
+    with open(vagrantfile_path, "w") as file:
+        file.writelines(vagrantfile_content)
+
+    print(f"Memory setting updated to {ram} MB in Vagrantfile.")
+
+
+#Update IP
+def update_ip(ip, vagrantfile_path):
+    
+    # Read the contents of the Vagrantfile
+    with open(vagrantfile_path, "r") as file:
+        vagrantfile_content = file.readlines()
+
+    new_ip_value = 'ip: "' + ip + '"'
+    # Modify the IP address line
+    for i, line in enumerate(vagrantfile_content):
+        if re.search(r'ip:\s*"\d+\.\d+\.\d+\.\d+"', line):
+            vagrantfile_content[i] = re.sub(r'ip:\s*"\d+\.\d+\.\d+\.\d+"', new_ip_value, line)
+            break
+
+    # Write the updated contents back to the Vagrantfile
+    with open(vagrantfile_path, "w") as file:
+        file.writelines(vagrantfile_content)
+
+    print(f"IP address updated to {ip} in Vagrantfile.")
+
+
+
 
 
 
@@ -72,13 +137,12 @@ def create_vm():
     
 
 
-    # Controlla che non esiste già la vm
+    # Check existing vm
     try:
         vm_path = create_vagrantfile(vm_name,vm_box, vm_cpus, vm_ram,vm_ip,vm_tap)
     except FileExistsError as e:
         return jsonify({"error": f"VM '{vm_name}' already exist. To modify it use the update request."}), 400 
 
-    # Esegui vagrant up per avviare la VM
     try:
         v = vagrant.Vagrant(vm_path)
         v.up()
@@ -128,10 +192,50 @@ def show_vm():
         return jsonify({"error": "Error in reading vms status"}), 500
 
 
+@app.route('/update/<vm_name>', methods=['POST'])
+def update_vm(vm_name):
+    data = request.json
+    vm_cpus = data.get('cpus') 
+    vm_ram = data.get ('ram') 
+    vm_ip=data.get('ip')
+    
+
+    if ((not vm_cpus) and (not vm_ram) and (not vm_ip)):
+        return jsonify({"error": "Field is needed"}), 400
+    
+    #Check if vm exist
+    vm_path = os.path.join(VM_PATH, vm_name)
+    if not os.path.exists(vm_path):
+        return jsonify({"error": f"VM '{vm_name}' doesn't exist"}), 404
+
+    vagrantfile_path = os.path.join(vm_path, "Vagrantfile")
+    print ("vagrant path" + vagrantfile_path)
+
+    if (vm_cpus):
+        update_cpu(vm_cpus, vagrantfile_path)
+        print ("cpu ok" + vm_cpus)
+
+    if (vm_ram):
+        update_ram(vm_ram, vagrantfile_path)  
+        print ("ram ok" + vm_ram) 
+    
+    if (vm_ip):
+        update_ip(vm_ip, vagrantfile_path)
+        print ("ip ok" + vm_ip)
+
+    try:
+        v = vagrant.Vagrant(vm_path)
+        v.reload()
+        return jsonify({"message": f"VM '{vm_name}' sucessfully updated!"}), 200
+    except Exception:
+        return jsonify({"error": "Error updating vm"}), 500
+
+
+
+
 if __name__ == '__main__':
     os.makedirs(VM_PATH, exist_ok=True)
     app.run(host='0.0.0.0', port=5000)
-
 
 
 

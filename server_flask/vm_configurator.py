@@ -10,7 +10,7 @@ app.config.from_object(__name__)
 
 CORS(app,resources={r'/*':{'origins':'*'}})
 
-#Directory dove creare le vm
+#Directory for vms
 VM_PATH = './vm'
 
 #Creazione vagrantfile
@@ -233,7 +233,7 @@ def update_vm(vm_name):
 
 
 @app.route('/start/<vm_name>', methods=['POST'])
-def power_vm(vm_name):
+def power_start_vm(vm_name):
 
 #Check if vm exist
     vm_path = os.path.join(VM_PATH, vm_name)
@@ -249,7 +249,7 @@ def power_vm(vm_name):
 
 
 @app.route('/stop/<vm_name>', methods=['POST'])
-def power_vm(vm_name):
+def power_stop_vm(vm_name):
 
 #Check if vm exist
     vm_path = os.path.join(VM_PATH, vm_name)

@@ -1,3 +1,9 @@
+<script setup>
+import { store } from '../main.js'
+</script>
+
+
+
 <template>
   <div class="container">
     <div class="row">
@@ -30,8 +36,18 @@
               
               <td>
                 <div class="btn-group" role="group">
-                  <button type="button" class="btn btn-warning btn-sm">Update</button>
                   <button
+                    type="button"
+                    class="btn btn-success btn-sm"
+                    @click="handleReloadVm(vm)">
+                    Reload
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-warning btn-sm"
+                    @click="toggleUpdateVmModal,store.vmId=(vm),console.log(store.vmId)">
+                    Update
+                  </button>                  <button
                     type="button"
                     class="btn btn-danger btn-sm"
                     @click="handleDeleteVm(vm)">
@@ -135,16 +151,6 @@ role="dialog">
             v-model="addVMForm.ip"
             placeholder="Enter IP address">
         </div>
-
-        <div class="mb-3">
-          <label for="addVMInterface" class="form-label">Interface:</label>
-          <input
-            type="text"
-            class="form-control"
-            id="addVMInterface"
-            v-model="addVMForm.int"
-            placeholder="Enter name of Tap interface (Tap0, Tap1 ...)">
-        </div>
         
         <div class="btn-group" role="group">
           <button
@@ -165,7 +171,80 @@ role="dialog">
   </div>
 </div>
 </div>
-<div v-if="activeAddVmModal" class="modal-backdrop fade show"></div>
+
+
+
+<!-- update vm modal -->
+<div
+ref="updateVmModal"
+class="modal fade"
+:class="{ show: activeUpdateVmModal, 'd-block': activeUpdateVmModal }"
+tabindex="-1"
+role="dialog">
+<div class="modal-dialog" role="document">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title">Update a new VM</h5>
+      <button
+        type="button"
+        class="close"
+        data-dismiss="modal"
+        aria-label="Close"
+        @click="toggleUpdateVmModal">
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form>
+        <div class="mb-3">
+          <label for="updateVMCPU" class="form-label">CPUs:</label>
+          <input
+            type="text"
+            class="form-control"
+            id="updateVMCPU"
+            v-model="updateVMForm.cpu"
+            placeholder="Enter number of CPUs">
+        </div>
+        <div class="mb-3">
+          <label for="updateVMRAM" class="form-label">RAM:</label>
+          <input
+            type="text"
+            class="form-control"
+            id="updateVMRAM"
+            v-model="updateVMForm.ram"
+            placeholder="Enter RAM (MB)">
+        </div>
+
+        <div class="mb-3">
+          <label for="updateVMIP" class="form-label">IP:</label>
+          <input
+            type="text"
+            class="form-control"
+            id="updateVMIP"
+            v-model="updateVMForm.ip"
+            placeholder="Enter IP address">
+        </div>
+        
+        <div class="btn-group" role="group">
+          <button
+            type="button"
+            class="btn btn-primary btn-sm"
+            @click="handleUpdateSubmit(vm)">
+            Submit
+          </button>
+          <button
+            type="button"
+            class="btn btn-danger btn-sm"
+            @click="handleUpdateReset">
+            Reset
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+</div>
+<div v-if="activeUpdateVmModal" class="modal-backdrop fade show"></div>
 
   </div>
 </template>
@@ -177,12 +256,17 @@ export default {
   data() {
     return {
       activeAddVmModal: false,
+      activeUpdateVmModal: false,
       addVMForm: {
         name: '',
         cpu: '',
         ram: '',
         ip:'',
-        int:''
+      },
+      updateVMForm: {
+        cpu: '',
+        ram: '',
+        ip:'',
       },
       vms: [],
     };
@@ -191,6 +275,18 @@ export default {
     
     addVm(payload) {
       const path = 'http://localhost:5000/create';
+      axios.post(path, payload)
+        .then(() => {
+          this.getVMs();
+        })
+        .catch((error) => {
+
+          console.log(error);
+          this.getVMs();
+        });
+    },
+    updateVm(vmId,payload) {
+      const path = `http://localhost:5000/update/${vmId}`;
       axios.post(path, payload)
         .then(() => {
           this.getVMs();
@@ -213,7 +309,10 @@ export default {
         });
     },
     handleAddReset() {
-      this.initForm();
+      this.initAddForm();
+    },
+    handleUpdateReset() {
+      this.initUpdateForm();
     },
     handleAddSubmit() {
       this.toggleAddVmModal();
@@ -226,17 +325,35 @@ export default {
         cpu: this.addVMForm.cpu,
         ram: this.addVMForm.ram,
         ip: this.addVMForm.ip,
-        int:this.addVMForm.int
       };
       this.addVm(payload);
-      this.initForm();
+      this.initAddForm();
     },
-    initForm() {
+    handleUpdateSubmit(vm) {
+      this.toggleUpdateVmModal;
+      // let read = false;
+      // if (this.addVMForm.read[0]) {
+      //   read = true;
+      // }
+      const payload = {
+        cpu: this.updateVMForm.cpu,
+        ram: this.updateVMForm.ram,
+        ip: this.updateVMForm.ip,
+      };
+      console.log(vm)
+      this.updateVm(vm.name,payload);
+      this.initUpdateForm();
+    },
+    initAddForm() {
       this.addVMForm.name = '';
       this.addVMForm.cpu = '';
       this.addVMForm.ram = '';
       this.addVMForm.ip='';
-      this.addVMForm.int='';
+    },
+    initUpdateForm() {
+      this.updateVMForm.cpu = '';
+      this.updateVMForm.ram = '';
+      this.updateVMForm.ip='';
     },
     toggleAddVmModal() {
       const body = document.querySelector('body');
@@ -247,6 +364,17 @@ export default {
         body.classList.remove('modal-open');
       }
     },
+    toggleUpdateVmModal() {
+      const body = document.querySelector('body');
+      this.activeUpdateVmModal = !this.activeUpdateVmModal;
+      if (this.activeUpdateVmModal) {
+        body.classList.add('modal-open');
+      } else {
+        body.classList.remove('modal-open');
+      }
+    },
+
+
     handleDeleteVm(vm) {
       this.removeVm(vm.name);
     },
@@ -263,6 +391,23 @@ export default {
           thisMgetVms();
         });
     },
+    handleReloadVm(vm) {
+      this.reloadVm(vm.name);
+    },
+    reloadVm(vmID) {
+      const path = `http://localhost:5000/reload/${vmID}`;
+      axios.delete(path)
+        .then(() => {
+          this.getVMs();
+          this.message = 'Vm reloaded!';
+          this.showMessage = true;
+        })
+        .catch((error) => {
+          console.error(error);
+          thisMgetVms();
+        });
+    },
+
 
 
   },

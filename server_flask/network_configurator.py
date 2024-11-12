@@ -14,9 +14,9 @@ ovs_bridge = "br0"
 def create_int(vm_id):
     
     #Check if vm exist
-    vm_path = os.path.join(VM_PATH, vm_id)
-    if not os.path.exists(vm_path):
-        return jsonify({"error": f"VM '{vm_id}' doesn't exist"}), 404
+    # vm_path = os.path.join(VM_PATH, vm_id)
+    # if not os.path.exists(vm_path):
+    #     return jsonify({"error": f"VM '{vm_id}' doesn't exist"}), 404
 
     #Interface name
     veth_name = f"veth-{vm_id}"

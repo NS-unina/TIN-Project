@@ -7,6 +7,7 @@ import shutil
 import re
 import random
 import string
+import json
 
 app = Flask (__name__)
 app.config.from_object(__name__)
@@ -20,7 +21,17 @@ VM_PATH = './vm'
 NET_SERVER="http://127.0.0.1:5001"
 
 #Dictionary ID
-vms_ids = {}
+vm_id_dictionary = {}
+try:
+    with open(os.path.join(VM_PATH, 'ID_LIST'), 'r') as id_list:
+            vm_id_dictionary = json.load(id_list)
+except FileNotFoundError:
+    id_list = open(os.path.join(VM_PATH, 'ID_LIST'), 'w')
+    id_list.write(json.dumps({}))
+    id_list.close()
+except json.JSONDecodeError as err:
+    print (err)
+print (vm_id_dictionary)
 
 #Creazione vagrantfile
 def create_vagrantfile(vagrantfile_path,name,box,cpus,ram,ip,tap):
@@ -46,9 +57,9 @@ def create_vagrantfile(vagrantfile_path,name,box,cpus,ram,ip,tap):
     end
     """
 
-    with open(os.path.join(vm_path, 'Vagrantfile'), 'w') as vagrant_file:
+    with open(os.path.join(vagrantfile_path, 'Vagrantfile'), 'w') as vagrant_file:
         vagrant_file.write(vagrantfile_content)
-    return vm_path
+    return
 
 
 #Update CPU
@@ -114,15 +125,40 @@ def update_ip(ip, vagrantfile_path):
     print(f"IP address updated to {ip} in Vagrantfile.")
 
 #Define vm's id
-def generate_unique_id(length=5):
+def generate_unique_id(vm_name, length=5):
+    global vm_id_dictionary
+    
     while True:
+
         vm_id = ''.join(random.choices(string.ascii_letters + string.digits, k=length))
-        # Check unique id
-        if vm_id not in vms_ids:
+        
+        print("generate_unique_id", vm_id_dictionary)
+
+        
             
-            return vm_id
+
+        if vm_id not in vm_id_dictionary:
+            vm_id_dictionary[vm_name] = vm_id
+        
+            with open(os.path.join(VM_PATH, 'ID_LIST'), 'w') as id_list:
+                id_list.write(json.dumps(vm_id_dictionary))
+        
+        return vm_id
 
 
+#Delete from dictionary - vm_id
+def delete_from_dictionary(vm_name):
+    global vm_id_dictionary
+
+    with open(os.path.join(VM_PATH, 'ID_LIST'), 'r') as id_list:
+        vm_id_dictionary = json.load(id_list)
+
+
+    if vm_name in vm_id_dictionary:
+        del vm_id_dictionary[vm_name]
+    
+        with open(os.path.join(VM_PATH, 'ID_LIST'), 'w') as id_list:
+                id_list.write(json.dumps(vm_id_dictionary))
 
 
 @app.route('/create', methods=['POST'])
@@ -133,7 +169,6 @@ def create_vm():
     vm_cpus = data.get('cpus', '2') #default 2 CPU
     vm_ram = data.get ('ram', 1024) #default 1024 MB
     vm_ip=data.get('ip')
-    #vm_tap=data.get('int')
 
 
     if not vm_name:
@@ -142,48 +177,39 @@ def create_vm():
     if not vm_ip:
         return jsonify({"error": "ip field is needed"}), 400
     
-    # if not vm_tap:
-    #     return jsonify({"error": "tap field is needed"}), 400
-    
-    
-
+    #Check if vm already exist
     vm_path = os.path.join(VM_PATH, vm_name)
     if os.path.exists(vm_path):
         raise FileExistsError()
     os.makedirs(vm_path)
 
-    vm_id = generate_unique_id()
-    print(f"id: {vm_id}")
-    vms_ids[vm_id] = vm_name #salva nel dizionario
+    #Generate vm_id
+    vm_id = generate_unique_id(vm_name)
+    print (vm_id_dictionary)
 
+    #Create network interfaces for the VM
     try:
-        #Create network interfaces for the VM
         url= f"{NET_SERVER}/network/create_int/{vm_id}"
-        print(url)
         response=requests.post(url,json="")
+
         if (response.status_code == 200):
             print("Interface created successfully!")
             print(response.json())
-            #print(response[0].json())
-            print(response.get('interface'))
-            response_data = response[0].json
-            interface_value = response_data.get('interface')
-
+            vm_interface = response.json()["interface"]
         else:
             return(f"Request failed with status code: {response.status_code}")
 
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
-
+    print ("create:", vm_id_dictionary)
     #Creating vagrantfile
     try:
-        vm_path = create_vagrantfile(vm_path, vm_name,vm_box, vm_cpus, vm_ram, vm_ip, vm_tap)
+        create_vagrantfile(vm_path, vm_name,vm_box, vm_cpus, vm_ram, vm_ip, vm_interface)
     except FileExistsError as e:
         return jsonify({"error": f"VM '{vm_name}' already exist. To modify it use the update request."}), 400 
 
-    
-
+    #Starting the vm
     try:
         v = vagrant.Vagrant(vm_path)
         #v.up()
@@ -194,14 +220,36 @@ def create_vm():
 
 @app.route('/delete/<vm_name>', methods=['DELETE'])
 def delete_vm(vm_name):
-    vm_path = os.path.join(VM_PATH, vm_name)
+    global vm_id_dictionary
 
+    #Check if vm exists
+    vm_path = os.path.join(VM_PATH, vm_name)
     if not os.path.exists(vm_path):
         return jsonify({"error": f"VM '{vm_name}' doesn't exist"}), 404
 
+    vm_id = vm_id_dictionary.get(vm_name)
+    print (vm_id)
+
+    try:
+        url= f"{NET_SERVER}/network/delete_int/{vm_id}"
+        response=requests.delete(url)
+
+        if (response.status_code == 200):
+            print("Interface deleted successfully!")
+            delete_from_dictionary(vm_name)
+            print ("delete:", vm_id_dictionary)
+        else:
+            return(f"Request failed with status code: {response.status_code}")
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+    
+    
+
+    #Deleting vm and directory
     try:
         v = vagrant.Vagrant(vm_path)
-        v.destroy()
+        #v.destroy()
         shutil.rmtree(vm_path)
         return jsonify({"message": f"VM '{vm_name}' sucessfully deleted!"}), 200
     except Exception:
@@ -250,24 +298,20 @@ def update_vm(vm_name):
         return jsonify({"error": f"VM '{vm_name}' doesn't exist"}), 404
 
     vagrantfile_path = os.path.join(vm_path, "Vagrantfile")
-    print ("vagrant path" + vagrantfile_path)
 
     if (vm_cpus):
         update_cpu(vm_cpus, vagrantfile_path)
-        print ("cpu ok" + vm_cpus)
 
     if (vm_ram):
         update_ram(vm_ram, vagrantfile_path)  
-        print ("ram ok" + vm_ram) 
     
     if (vm_ip):
         update_ip(vm_ip, vagrantfile_path)
-        print ("ip ok" + vm_ip)
 
     try:
         v = vagrant.Vagrant(vm_path)
-        v.reload()
-        return jsonify({"message": f"VM '{vm_name}' sucessfully updated!"}), 200
+        #v.reload()
+        return jsonify({"message": f"VM '{vm_name}' sucessfully updated!.", "CPU": f"{vm_cpus}", "RAM": f"{vm_ram}", "IP": f"{vm_ip}"}), 200
     except Exception:
         return jsonify({"error": "Error updating vm"}), 500
 

@@ -1,12 +1,10 @@
-from flask import Flask, request, jsonify
+from function_server import *
 import subprocess
-import os
 
 app = Flask(__name__)
 app.config.from_object(__name__)
 
-#Directory for vms
-VM_PATH = './vm'
+
 #OVS 
 ovs_bridge = "br0"
 

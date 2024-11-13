@@ -6,6 +6,7 @@ server_flask/vm/*/
 *.cfg
 include/
 share/
+server_flask/vm/ID_LIST
 
 ### Flask ###
 instance/*

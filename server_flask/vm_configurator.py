@@ -1,7 +1,7 @@
+from time import sleep
 from function_server import *
 from flask_cors import CORS
 import vagrant
-import requests
 import shutil
 
 
@@ -10,18 +10,20 @@ app.config.from_object(__name__)
 
 CORS(app,resources={r'/*':{'origins':'*'}})
 
-#Server Address for network configuration (da fare nel file di config)
-NET_SERVER="http://127.0.0.1:5001"
 
 
 #Richiesta automatica di init
-# try:
-#     url= f"{NET_SERVER}/network/init_int"
-#     return (response.json())
-# except Exception as e:
-#     return jsonify({"error": str(e)}), 400
+vm_id_dictionary = init_int()
+print (vm_id_dictionary)
 
-
+for values in vm_id_dictionary:
+    veth_name = vm_id_dictionary.get(values)
+    try:
+        url= f"{NET_SERVER}/network/create_int/{veth_name}"
+        response=requests.post(url,json="")
+        print (response.json())
+    except Exception as e:
+        print (jsonify({"error": str(e)}), 400)
 
 
 @app.route('/create', methods=['POST'])

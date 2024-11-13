@@ -4,15 +4,19 @@ import re
 import random
 import string
 import json
+import requests
 
 #Directory for vms
 VM_PATH = './vm'
 
 #Dictionary ID
-vm_id_dictionary = {}
+
 
 #OVS 
 ovs_bridge = "br0"
+
+#Server Address for network configuration (da fare nel file di config)
+NET_SERVER="http://127.0.0.1:5001"
 
 #Vagrantfile creation
 def create_vagrantfile(vagrantfile_path,name,box,cpus,ram,ip,tap):
@@ -68,8 +72,8 @@ def update_cpu(cpu, vm_name):
 def update_ram(ram, vm_name):
     
     # Read the contents of the Vagrantfile
-    vagrantfile_path = os.path.join(VM_PATH, vm_name)
-    with open(os.path.join(vagrantfile_path, 'Vagrantfile'), "r") as file:
+    vagrantfile_path = os.path.join(VM_PATH, vm_name, "Vagrantfile")
+    with open(vagrantfile_path, "r") as file:
         vagrantfile_content = file.readlines()
 
     new_memory_value = "vb.memory = " + ram
@@ -90,8 +94,8 @@ def update_ram(ram, vm_name):
 def update_ip(ip, vm_name):
     
     # Read the contents of the Vagrantfile
-    vagrantfile_path = os.path.join(VM_PATH, vm_name)
-    with open(os.path.join(vagrantfile_path, 'Vagrantfile'), "r") as file:
+    vagrantfile_path = os.path.join(VM_PATH, vm_name, "Vagrantfile")
+    with open(vagrantfile_path, "r") as file:
         vagrantfile_content = file.readlines()
 
     new_ip_value = 'ip: "' + ip + '"'
@@ -138,3 +142,22 @@ def delete_from_dictionary(vm_name):
     
         with open(os.path.join(VM_PATH, 'ID_LIST'), 'w') as id_list:
                 id_list.write(json.dumps(vm_id_dictionary))
+
+
+def init_int():
+    vm_id_dictionary = {}
+    
+    #Read from id_list already existing interfaces
+    try:
+        with open(os.path.join(VM_PATH, 'ID_LIST'), 'r') as id_list:
+            vm_id_dictionary = json.load(id_list)
+    except FileNotFoundError:
+        id_list = open(os.path.join(VM_PATH, 'ID_LIST'), 'w')
+        id_list.write(json.dumps({}))
+        id_list.close()
+    except json.JSONDecodeError as err:
+        print (err)
+    
+    return vm_id_dictionary
+
+    

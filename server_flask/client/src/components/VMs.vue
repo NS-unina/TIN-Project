@@ -45,7 +45,7 @@ import { store } from '../main.js'
                   <button
                     type="button"
                     class="btn btn-warning btn-sm"
-                    @click="toggleUpdateVmModal,store.vmId=(vm),console.log(store.vmId)">
+                    @click="store.vmId=(vm.name),console.log(store.vmId),toggleUpdateVmModal()">
                     Update
                   </button>                  <button
                     type="button"
@@ -190,7 +190,7 @@ role="dialog">
         class="close"
         data-dismiss="modal"
         aria-label="Close"
-        @click="toggleUpdateVmModal">
+        @click="store.vmId='',console.log(store.vmId),toggleUpdateVmModal()">
         <span aria-hidden="true">&times;</span>
       </button>
     </div>
@@ -229,7 +229,7 @@ role="dialog">
           <button
             type="button"
             class="btn btn-primary btn-sm"
-            @click="handleUpdateSubmit(vm)">
+            @click="handleUpdateSubmit(store.vmId),console.log(store.vmId)">
             Submit
           </button>
           <button
@@ -341,7 +341,7 @@ export default {
         ip: this.updateVMForm.ip,
       };
       console.log(vm)
-      this.updateVm(vm.name,payload);
+      this.updateVm(vm,payload);
       this.initUpdateForm();
     },
     initAddForm() {

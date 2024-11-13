@@ -14,16 +14,13 @@ CORS(app,resources={r'/*':{'origins':'*'}})
 NET_SERVER="http://127.0.0.1:5001"
 
 
-try:
-    with open(os.path.join(VM_PATH, 'ID_LIST'), 'r') as id_list:
-            vm_id_dictionary = json.load(id_list)
-except FileNotFoundError:
-    id_list = open(os.path.join(VM_PATH, 'ID_LIST'), 'w')
-    id_list.write(json.dumps({}))
-    id_list.close()
-except json.JSONDecodeError as err:
-    print (err)
-print (vm_id_dictionary)
+#Richiesta automatica di init
+# try:
+#     url= f"{NET_SERVER}/network/init_int"
+#     return (response.json())
+# except Exception as e:
+#     return jsonify({"error": str(e)}), 400
+
 
 
 
@@ -62,8 +59,7 @@ def create_vm():
             print(response.json())
             vm_interface = response.json()["interface"]
         else:
-            return(f"Request failed with status code: {response.status_code}")
-
+            return jsonify({f"Request failed with status code: {response.status_code}"})
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
@@ -100,9 +96,8 @@ def delete_vm(vm_name):
         if (response.status_code == 200):
             print("Interface deleted successfully!")
             delete_from_dictionary(vm_name)
-            print ("delete:", vm_id_dictionary)
         else:
-            return(f"Request failed with status code: {response.status_code}")
+            return jsonify({"error": f"Request failed with status code: {response.status_code}"})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 400

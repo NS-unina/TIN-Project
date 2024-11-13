@@ -4,9 +4,64 @@ import subprocess
 app = Flask(__name__)
 app.config.from_object(__name__)
 
+@app.route('/network/init_int', methods=['GET'])
+def init_int():
+    global vm_id_dictionary
 
-#OVS 
-ovs_bridge = "br0"
+    #Read from id_list already existing interfaces
+    try:
+        with open(os.path.join(VM_PATH, 'ID_LIST'), 'r') as id_list:
+            vm_id_dictionary = json.load(id_list)
+    except FileNotFoundError:
+        id_list = open(os.path.join(VM_PATH, 'ID_LIST'), 'w')
+        id_list.write(json.dumps({}))
+        id_list.close()
+    except json.JSONDecodeError as err:
+        print (err)
+    
+    print (vm_id_dictionary)
+
+    #Active those interfaces
+    for values in vm_id_dictionary:
+
+        veth_name = vm_id_dictionary.get(values)
+
+        subprocess.run(["sudo", "ip", "link", "add", veth_name, "type", "veth", "peer", "name", f"{veth_name}-peer"], check=True)
+        subprocess.run(["sudo", "ovs-vsctl", "add-port", ovs_bridge, veth_name], check=True)
+        subprocess.run(["sudo", "ip", "link", "set", veth_name, "up"], check=True)
+        subprocess.run(["sudo", "ip", "link", "set", f"{veth_name}-peer", "up"], check=True)
+
+    return jsonify({'status': 'Network configured'}), 200
+
+
+@app.route('/network/delete_global_int', methods=['GET'])
+def delete_global_int():
+    global vm_id_dictionary
+
+    #Read from id_list already existing interfaces
+    try:
+        with open(os.path.join(VM_PATH, 'ID_LIST'), 'r') as id_list:
+            vm_id_dictionary = json.load(id_list)
+    except FileNotFoundError:
+        return jsonify({"Nothing to delete"}), 200
+    except json.JSONDecodeError as err:
+        print (err)
+    
+    print (vm_id_dictionary)
+
+    #Active those interfaces
+    for values in vm_id_dictionary:
+
+        veth_name = vm_id_dictionary.get(values)
+        print (veth_name)
+        
+        subprocess.run(["sudo", "ovs-vsctl", "del-port", ovs_bridge, veth_name], check=True)
+        subprocess.run(["sudo", "ip", "link", "delete", veth_name], check=True)
+
+    return jsonify({'status': 'Network configured'}), 200
+
+
+
 
 @app.route('/network/create_int/<vm_id>', methods=['POST'])
 def create_int(vm_id):

@@ -11,6 +11,9 @@ VM_PATH = './vm'
 #Dictionary ID
 vm_id_dictionary = {}
 
+#OVS 
+ovs_bridge = "br0"
+
 #Vagrantfile creation
 def create_vagrantfile(vagrantfile_path,name,box,cpus,ram,ip,tap):
     

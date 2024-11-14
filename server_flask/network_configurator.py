@@ -21,6 +21,7 @@ def create_int(vm_id):
 
         #check if veth already exists
         if(os.path.exists(f"/sys/class/net/{veth_name}")):
+            #check if down
             state = subprocess.check_output(["ip", "link", "show", veth_name], text=True)
             if ("state DOWN" in state):
                 subprocess.run(["sudo", "ip", "link", "set", veth_name, "up"], check=True)
@@ -28,8 +29,10 @@ def create_int(vm_id):
                 return jsonify({'status': 'Interface already exists and it was turned on.', 'interface': f'{veth_name}-peer'}), 200
             return jsonify({'status': 'Interface already exists and it is already up.', 'interface': f'{veth_name}-peer'}), 200
         
+        if not (f"Port {veth_name}" in (subprocess.check_output(["sudo", "ovs-vsctl", "show"], text=True))):
+            subprocess.run(["sudo", "ovs-vsctl", "add-port", ovs_bridge, veth_name], check=True)
+
         subprocess.run(["sudo", "ip", "link", "add", veth_name, "type", "veth", "peer", "name", f"{veth_name}-peer"], check=True)
-        subprocess.run(["sudo", "ovs-vsctl", "add-port", ovs_bridge, veth_name], check=True)
         subprocess.run(["sudo", "ip", "link", "set", veth_name, "up"], check=True)
         subprocess.run(["sudo", "ip", "link", "set", f"{veth_name}-peer", "up"], check=True)
 

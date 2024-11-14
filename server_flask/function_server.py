@@ -9,9 +9,6 @@ import requests
 #Directory for vms
 VM_PATH = './vm'
 
-#Dictionary ID
-
-
 #OVS 
 ovs_bridge = "br0"
 

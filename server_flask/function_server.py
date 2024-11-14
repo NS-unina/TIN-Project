@@ -120,7 +120,7 @@ def generate_unique_id(vm_name, length=5):
         if vm_id not in vm_id_dictionary:
             vm_id_dictionary[vm_name] = vm_id
         
-            with open(os.path.join(VM_PATH, 'ID_LIST'), 'w') as id_list:
+            with open(os.path.join(VM_PATH, 'ID_LIST.json'), 'w') as id_list:
                 id_list.write(json.dumps(vm_id_dictionary))
         
         return vm_id
@@ -130,15 +130,15 @@ def generate_unique_id(vm_name, length=5):
 def delete_from_dictionary(vm_name):
     global vm_id_dictionary
 
-    with open(os.path.join(VM_PATH, 'ID_LIST'), 'r') as id_list:
+    with open(os.path.join(VM_PATH, 'ID_LIST.json'), 'r') as id_list:
         vm_id_dictionary = json.load(id_list)
 
 
     if vm_name in vm_id_dictionary:
         del vm_id_dictionary[vm_name]
     
-        with open(os.path.join(VM_PATH, 'ID_LIST'), 'w') as id_list:
-                id_list.write(json.dumps(vm_id_dictionary))
+        with open(os.path.join(VM_PATH, 'ID_LIST.json'), 'w') as id_list:
+            id_list.write(json.dumps(vm_id_dictionary))
 
 
 def init_int():
@@ -146,10 +146,10 @@ def init_int():
     
     #Read from id_list already existing interfaces
     try:
-        with open(os.path.join(VM_PATH, 'ID_LIST'), 'r') as id_list:
+        with open(os.path.join(VM_PATH, 'ID_LIST.json'), 'r') as id_list:
             vm_id_dictionary = json.load(id_list)
     except FileNotFoundError:
-        id_list = open(os.path.join(VM_PATH, 'ID_LIST'), 'w')
+        id_list = open(os.path.join(VM_PATH, 'ID_LIST.json'), 'w')
         id_list.write(json.dumps({}))
         id_list.close()
     except json.JSONDecodeError as err:

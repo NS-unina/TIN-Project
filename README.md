@@ -9,29 +9,48 @@ WORK IN PROGRESS
 
 ### Requirements
 
-In order to execute the project you need to install Open vSwitch, Vagrant, Libvirt
+In order to execute the project you need to install Open vSwitch, Vagrant, VirtualBox
 
 ### Setup
 
 #### Create and Activate the virtual environment:
-
+Inside the directory:
 ```
 python3 -m venv <name_of_the_environment>
 source bin/activate
 ```
 
 #### Install the Requirements:
-
-```
-pip install -r requirements.txt
-```
-
-#### Run the flask server
-
+Backend Requirements:
 ```
 cd /server_flask
-flask run
+pip install -r requirements.txt
 ```
+Frontend Requirements:
+```
+cd /client
+nodeenv -p
+npm install
+```
+
+#### Run the backend servers
+```
+cd /server_flask
+flask --app network_configurator.py -p 5001
+```
+```
+cd /server_flask
+flask --app vm_configurator.py -p 5000
+```
+
+
+#### Run the frontend server
+```
+cd /server_flask/client
+npm run dev
+```
+
+
 
 ## Architecture
 

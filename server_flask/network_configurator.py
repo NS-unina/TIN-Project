@@ -29,10 +29,11 @@ def create_int(vm_id):
                 return jsonify({'status': 'Interface already exists and it was turned on.', 'interface': f'{veth_name}-peer'}), 200
             return jsonify({'status': 'Interface already exists and it is already up.', 'interface': f'{veth_name}-peer'}), 200
         
+        subprocess.run(["sudo", "ip", "link", "add", veth_name, "type", "veth", "peer", "name", f"{veth_name}-peer"], check=True)
+        
         if not (f"Port {veth_name}" in (subprocess.check_output(["sudo", "ovs-vsctl", "show"], text=True))):
             subprocess.run(["sudo", "ovs-vsctl", "add-port", ovs_bridge, veth_name], check=True)
-
-        subprocess.run(["sudo", "ip", "link", "add", veth_name, "type", "veth", "peer", "name", f"{veth_name}-peer"], check=True)
+        
         subprocess.run(["sudo", "ip", "link", "set", veth_name, "up"], check=True)
         subprocess.run(["sudo", "ip", "link", "set", f"{veth_name}-peer", "up"], check=True)
 
@@ -57,6 +58,7 @@ def delete_int(vm_id):
         if(not os.path.exists(f"/sys/class/net/{veth_name}")):
             return jsonify(f'error, the interface {veth_name} does not exists'), 500
 
+        # if (f"Port {veth_name}" in (subprocess.check_output(["sudo", "ovs-vsctl", "show"], text=True))):
         subprocess.run(["sudo", "ovs-vsctl", "del-port", ovs_bridge, veth_name], check=True)
         subprocess.run(["sudo", "ip", "link", "delete", veth_name], check=True)
 

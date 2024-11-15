@@ -12,7 +12,6 @@ containerList={
   "list": [
   ]
 }
-    
 
 try:
     with open('Containers.json', 'r') as container_list:
@@ -24,6 +23,27 @@ except FileNotFoundError:
 except json.JSONDecodeError as err:
     print (err)
 print (containerList)
+
+
+def update_container_file_list (container_name):
+
+    try: 
+        container = client.containers.get(container_name)
+        
+        for i, containers in enumerate(containerList["list"]):
+            if containers["name"] == container_name:
+                containers["state"] = container.status
+
+        print(containerList)
+
+        with open('Containers.json', 'w') as container_list:
+            container_list.write(json.dumps(containerList))
+
+    except docker.errors.NotFound:
+        return jsonify({'Container not found': f'{container_name}'}), 404
+    
+
+
 
 
 
@@ -93,6 +113,55 @@ def delete_container(container_name):
                 container_list.write(json.dumps(containerList))
 
             return jsonify({'Container deleted': f'{container_name}'}), 200
+
          
+@app.route('/read', methods=['GET'])
+def read_container():
+    
+    try:
+        with open('Containers.json', 'r') as container_list:
+            containerList = json.load(container_list)
+    except FileNotFoundError:
+        return jsonify({'error': 'Container list missing'}), 500
+    
+    return jsonify(containerList),200
+    # (client.containers.list(all))
 
 
+
+
+
+
+@app.route('/start/<container_name>', methods=['GET'])
+def start_container(container_name):
+
+    #Check if container exists
+    try: 
+        container = client.containers.get(container_name)
+        container.start()
+        update_container_file_list (container_name)
+        return jsonify({'Container started successfully.': f'{container_name}'}), 200
+    except docker.errors.NotFound:
+        return jsonify({'Container not found': f'{container_name}'}), 404
+
+
+
+@app.route('/stop/<container_name>', methods=['GET'])
+def stop_container(container_name):
+    
+    try: 
+        container = client.containers.get(container_name)
+        container.stop()
+        update_container_file_list (container_name)
+        return jsonify({'Container stopped': f'{container_name}'}), 200
+
+    except docker.errors.NotFound:
+        return jsonify({'Container not found': f'{container_name}'}), 404
+        
+    
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5002)
+
+
+
+            

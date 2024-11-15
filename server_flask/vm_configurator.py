@@ -56,7 +56,7 @@ def create_vm():
         url= f"{NET_SERVER}/network/create_int/{vm_id}"
         response=requests.post(url,json="")
 
-        if (response.status_code == 200):
+        if (response.status_code == 201):
             print("Interface created successfully!")
             print(response.json())
             vm_interface = response.json()["interface"]
@@ -82,14 +82,22 @@ def create_vm():
 
 @app.route('/delete/<vm_name>', methods=['DELETE'])
 def delete_vm(vm_name):
-    global vm_id_dictionary
 
     #Check if vm exists
     vm_path = os.path.join(VM_PATH, vm_name)
     if not os.path.exists(vm_path):
         return jsonify({"error": f"VM '{vm_name}' doesn't exist"}), 404
-
+    
+    #Find associated interface
+    try:
+        with open(os.path.join(VM_PATH, 'ID_LIST.json'), 'r') as id_list:
+            vm_id_dictionary = json.load(id_list)
+    except FileNotFoundError as e:
+        return jsonify ({'error': f'{e}'}), 500
+    
+    print (vm_id_dictionary)
     vm_id = vm_id_dictionary.get(vm_name)
+    print (vm_id)
 
     try:
         url= f"{NET_SERVER}/network/delete_int/{vm_id}"
@@ -121,6 +129,7 @@ def show_vm():
     try:
         for vm_name in os.listdir(VM_PATH):
             vm_path = os.path.join(VM_PATH, vm_name)
+            print (vm_path)
             if os.path.isdir(vm_path):
                 v = vagrant.Vagrant(vm_path)
                 status = v.status()
@@ -134,8 +143,8 @@ def show_vm():
         response={"vms": vm_statuses}
         return jsonify(response), 200
 
-    except Exception:
-        return jsonify({"error": "Error in reading vms status"}), 500
+    except Exception as e:
+        return jsonify({"error": f"Error in reading vms status. {e}"}), 500
 
 
 @app.route('/update/<vm_name>', methods=['POST'])

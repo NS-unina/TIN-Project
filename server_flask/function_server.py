@@ -9,6 +9,9 @@ import requests
 #Directory for vms
 VM_PATH = './vm'
 
+#Dictionary
+vm_id_dictionary = {}
+
 #OVS 
 ovs_bridge = "br0"
 
@@ -28,8 +31,8 @@ def create_vagrantfile(vagrantfile_path,name,box,cpus,ram,ip,tap):
         end
     
         config.vm.provision "shell", path: "../init_vm.sh"
-        #config.vm.provision "docker"
-        config.vm.provision "file", source: "../app.py", destination: "app.py"
+        config.vm.provision "docker"
+        config.vm.provision "file", source: "../container_configurator.py", destination: "app.py"
         
         #network configuration
         #config.vm.network :forwarded_port, guest: port_vm, host: port_host, id: port_id
@@ -111,8 +114,13 @@ def update_ip(ip, vm_name):
 
 #Define vm's id
 def generate_unique_id(vm_name, length=5):
-    global vm_id_dictionary
     
+    try:
+        with open(os.path.join(VM_PATH, 'ID_LIST.json'), 'r') as id_list:
+            vm_id_dictionary = json.load(id_list)
+    except FileNotFoundError as e:
+        return jsonify ({'error': f'{e}'}), 500
+
     while True:
 
         vm_id = ''.join(random.choices(string.ascii_letters + string.digits, k=length))
@@ -128,11 +136,12 @@ def generate_unique_id(vm_name, length=5):
 
 #Delete from dictionary - vm_id
 def delete_from_dictionary(vm_name):
-    global vm_id_dictionary
-
-    with open(os.path.join(VM_PATH, 'ID_LIST.json'), 'r') as id_list:
-        vm_id_dictionary = json.load(id_list)
-
+    
+    try:
+        with open(os.path.join(VM_PATH, 'ID_LIST.json'), 'r') as id_list:
+            vm_id_dictionary = json.load(id_list)
+    except FileNotFoundError as e:
+        return jsonify ({'error': f'{e}'}), 500
 
     if vm_name in vm_id_dictionary:
         del vm_id_dictionary[vm_name]

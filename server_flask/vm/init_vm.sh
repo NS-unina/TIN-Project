@@ -6,6 +6,8 @@ sudo apt-get update
 
 sudo apt install python3
 sudo apt -y install python3-flask
+sudo apt -y install python3-pip
+pip install docker
 
 
 

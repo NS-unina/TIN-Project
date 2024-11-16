@@ -140,7 +140,7 @@ def init_int():
             vm_dictionary = json.load(id_list)
     except FileNotFoundError:
         id_list = open(os.path.join(VM_PATH, 'VM_list.json'), 'w')
-        id_list.write(json.dumps({}))
+        id_list.write(json.dumps({}, indent=4))
         id_list.close()
     except json.JSONDecodeError as err:
         print (err)
@@ -176,7 +176,7 @@ def create_item_vm_list(vm_name, id, ram, cpu, ip):
     }
 
     with open(os.path.join(VM_PATH, 'VM_list.json'), 'w') as vm_list:
-        vm_list.write(json.dumps(vm_dictionary))
+        vm_list.write(json.dumps(vm_dictionary, indent=4))
     
 
 # Update item in vm dictionary
@@ -197,7 +197,7 @@ def update_item_vm_list(vm_name, field, value_field):
         return jsonify({'error': f"VM '{vm_name}' doesn't exists."}), 404
     
     with open(os.path.join(VM_PATH, 'VM_list.json'), 'w') as vm_list:
-        vm_list.write(json.dumps(vm_dictionary))
+        vm_list.write(json.dumps(vm_dictionary, indent=4))
 
     return jsonify({'message': f"Field '{field}' successfully update to {value_field}."}), 200
 
@@ -231,5 +231,5 @@ def delete_from_dictionary(vm_name):
         del vm_dictionary[vm_name]
     
         with open(os.path.join(VM_PATH, 'VM_list.json'), 'w') as vm_list:
-            vm_list.write(json.dumps(vm_dictionary))
+            vm_list.write(json.dumps(vm_dictionary, indent=4))
 

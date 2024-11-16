@@ -21,7 +21,7 @@ def create_vm():
     data = request.json
     vm_name = data.get('name')
     vm_box = data.get('box','generic/ubuntu2004')
-    vm_cpus = data.get('cpus', '2') #default 2 CPU
+    vm_cpus = data.get('cpus', 2) #default 2 CPU
     vm_ram = data.get ('ram', 1024) #default 1024 MB
     vm_ip=data.get('ip')
 
@@ -198,7 +198,7 @@ def power_stop_vm(vm_name):
         v = vagrant.Vagrant(vm_path)
         v.halt()
         return jsonify({"message": f"VM '{vm_name}' successfully stopped!"}), 201
-    except Exception:
+    except Exception as e:
         return jsonify({"error": f"Error stopping  vm. {e}"}), 500
 
 

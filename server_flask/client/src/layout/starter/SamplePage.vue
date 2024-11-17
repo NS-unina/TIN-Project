@@ -408,7 +408,7 @@ export default {
         })
         .catch((error) => {
           console.error(error);
-          thisMgetVms();
+          this.getVms();
         });
     },
     handleReloadVm(vm) {
@@ -425,7 +425,7 @@ export default {
         })
         .catch((error) => {
           console.error(error);
-          thisMgetVms();
+          this.getVms();
         });
     },
     handleStartVm(vm) {
@@ -442,7 +442,7 @@ export default {
         })
         .catch((error) => {
           console.error(error);
-          thisMgetVms();
+          this.getVms();
         });
     },
     handleStopVm(vm) {
@@ -459,7 +459,7 @@ export default {
         })
         .catch((error) => {
           console.error(error);
-          thisMgetVms();
+          this.getVms();
         });
     },
   },

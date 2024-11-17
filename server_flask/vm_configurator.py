@@ -70,9 +70,11 @@ def create_vm():
     try:
         v = vagrant.Vagrant(vm_path)
         #v.up()
+        status = v.status()
+        update_item_vm_list(vm_name, "status", status[0].state)        
         return jsonify({"message": f"VM '{vm_name}' successfully created!"}), 201
     except Exception as e:
-        return jsonify({"error": f"Error deleting vm. {e}"}), 500
+        return jsonify({"error": f"Error creating vm. {e}"}), 500
 
 
 @app.route('/delete/<vm_name>', methods=['DELETE'])
@@ -108,23 +110,17 @@ def delete_vm(vm_name):
 
 
 @app.route('/read', methods=['GET'])
-def show_vm():
-    
-    vm_statuses = []
-    try:
-        for vm_name in os.listdir(VM_PATH):
-            vm_path = os.path.join(VM_PATH, vm_name)
-            print (vm_path)
-            if os.path.isdir(vm_path):
-                v = vagrant.Vagrant(vm_path)
-                status = v.status()
+def read_vms():
 
-                for entry in status:
-                    vm_statuses.append({
-                        "name": vm_name,
-                        "status": entry.state
-                    })
-    
+    try:
+        with open(os.path.join(VM_PATH, 'VM_list.json'), 'r') as vm_list:
+            vm_dictionary = json.load(vm_list)
+    except FileNotFoundError as e:
+        return jsonify ({'error': f"VM_list doesn't exists."}), 404
+
+    try:
+        vm_statuses = [{"name": key, **value} for key, value in vm_dictionary.items()]
+        print (vm_statuses)
         response={"vms": vm_statuses}
         return jsonify(response), 200
 
@@ -163,6 +159,8 @@ def update_vm(vm_name):
     try:
         v = vagrant.Vagrant(vm_path)
         #v.reload()
+        status = v.status()
+        update_item_vm_list(vm_name, "status", status[0].state)
         return jsonify({"message": f"VM '{vm_name}' sucessfully updated!.", "CPU": f"{vm_cpus}", "RAM": f"{vm_ram}", "IP": f"{vm_ip}"}), 200
     except Exception:
         return jsonify({"error": "Error updating vm"}), 500
@@ -181,6 +179,8 @@ def power_start_vm(vm_name):
     try:
         v = vagrant.Vagrant(vm_path)
         v.up()
+        status = v.status()
+        update_item_vm_list(vm_name, "status", status[0].state)
         return jsonify({"message": f"VM '{vm_name}' successfully started!"}), 201
     except Exception as e:
         return jsonify({"error": f"Error starting  vm. {e}"}), 500
@@ -197,6 +197,8 @@ def power_stop_vm(vm_name):
     try:
         v = vagrant.Vagrant(vm_path)
         v.halt()
+        status = v.status()
+        update_item_vm_list(vm_name, "status", status[0].state)
         return jsonify({"message": f"VM '{vm_name}' successfully stopped!"}), 201
     except Exception as e:
         return jsonify({"error": f"Error stopping  vm. {e}"}), 500
@@ -214,6 +216,8 @@ def power_vm(vm_name):
     try:
         v = vagrant.Vagrant(vm_path)
         v.reload()
+        status = v.status()
+        update_item_vm_list(vm_name, "status", status[0].state)
         return jsonify({"message": f"VM '{vm_name}' successfully reloaded!"}), 201
     except Exception:
         return jsonify({"error": "Error reloading  vm"}), 500

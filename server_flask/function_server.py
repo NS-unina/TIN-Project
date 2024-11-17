@@ -137,12 +137,12 @@ def init_int():
     
     #Read from id_list already existing interfaces
     try:
-        with open(os.path.join(VM_PATH, 'VM_list.json'), 'r') as id_list:
-            vm_dictionary = json.load(id_list)
+        with open(os.path.join(VM_PATH, 'VM_list.json'), 'r') as vm_list:
+            vm_dictionary = json.load(vm_list)
     except FileNotFoundError:
-        id_list = open(os.path.join(VM_PATH, 'VM_list.json'), 'w')
-        id_list.write(json.dumps({}, indent=4))
-        id_list.close()
+        vm_list = open(os.path.join(VM_PATH, 'VM_list.json'), 'w')
+        vm_list.write(json.dumps({}, indent=4))
+        vm_list.close()
     except json.JSONDecodeError as err:
         print (err)
     
@@ -173,7 +173,7 @@ def create_item_vm_list(vm_name, id, ram, cpu, ip):
         "ram": ram,
         "cpu": cpu,
         "ip": ip,
-        #"status": status
+        "status": "not created"
     }
 
     with open(os.path.join(VM_PATH, 'VM_list.json'), 'w') as vm_list:
@@ -201,6 +201,7 @@ def update_item_vm_list(vm_name, field, value_field):
         vm_list.write(json.dumps(vm_dictionary, indent=4))
 
     return jsonify({'message': f"Field '{field}' successfully update to {value_field}."}), 200
+
 
 #Search value of a field in dictionary
 def search_item_vm_list(vm_name, field):

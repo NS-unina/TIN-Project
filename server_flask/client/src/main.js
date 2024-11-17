@@ -1,15 +1,37 @@
-import { createApp } from 'vue'
-import App from './App.vue'
-import router from './router'
-import 'bootstrap/dist/css/bootstrap.css'
-import { reactive } from 'vue'
+/*
+ =========================================================
+ * Vue Black Dashboard - v1.1.3
+ =========================================================
 
-const app = createApp(App)
+ * Product Page: https://www.creative-tim.com/product/black-dashboard
+ * Copyright 2024 Creative Tim (http://www.creative-tim.com)
+
+ =========================================================
+
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+ */
+import Vue from "vue";
+import VueRouter from "vue-router";
+import RouterPrefetch from "vue-router-prefetch";
+import App from "./App";
+// TIP: change to import router from "./router/starterRouter"; to start with a clean layout
+import router from "./router/starterRouter";
+import { reactive } from "vue";
+
+import BlackDashboard from "./plugins/blackDashboard";
+import i18n from "./i18n";
+import "./registerServiceWorker";
+Vue.use(BlackDashboard);
+Vue.use(VueRouter);
+Vue.use(RouterPrefetch);
 
 export const store = reactive({
-    vmId: ""
-  })
+  vmId: "",
+});
 
-app.use(router)
-
-app.mount('#app')
+new Vue({
+  router,
+  i18n,
+  render: (h) => h(App),
+}).$mount("#app");

@@ -31,6 +31,7 @@ def create_vagrantfile(vagrantfile_path,name,box,cpus,ram,ip,tap):
         config.vm.provision "shell", path: "../init_vm.sh"
         config.vm.provision "docker"
         config.vm.provision "file", source: "../container_configurator.py", destination: "app.py"
+        config.vm.provision "file", source: "../function_container.py", destination: "function_container.py"
         
         #network configuration
         #config.vm.network :forwarded_port, guest: port_vm, host: port_host, id: port_id

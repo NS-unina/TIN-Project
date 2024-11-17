@@ -1,7 +1,6 @@
 from function_container import *
 from flask import Flask, jsonify, request
 import docker
-import os
 import json
 
 app = Flask(__name__)
@@ -26,24 +25,28 @@ def create_container():
         return jsonify({"error": "Name field is needed"}), 400
     
     #Check if name already exists
-    if check_container_name_exist(name):
-        return jsonify({'error': f'Container name {name} already exists.'})
+    if search_container_by_field("name", name):
+        return jsonify({'error': f'Container name {name} already exists.'}), 400
 
+    #Check if port already exists
+    if search_container_by_field("vm_port", vm_port):
+        return jsonify({'error': f'Container port {vm_port} already in use.'}), 400
     
-    client.containers.run(docker_image,name=name, detach=True, ports={vm_port: 2222})
-    container=client.containers.get(name)
-    create_item_container_list(container, vm_port)
+    try:
+        client.containers.run(docker_image,name=name, detach=True, ports={2222:vm_port})
+        container=client.containers.get(name)
+        create_item_container_list(container, vm_port)
+    except docker.errors.APIError as e:
+        return jsonify({'error': f'{e}'})
         
     return jsonify({"message": f"Container '{name}' successfully created!"}), 201
-
-
         
 
 @app.route('/delete/<container_name>', methods=['DELETE'])
 def delete_container(container_name):
 
     #Check if name already exists
-    if not check_container_name_exist(container_name):
+    if not search_container_by_field("name", container_name):
         return jsonify({'error': f"Container name {container_name} doesn't exists."})
     
     #delete container
@@ -51,12 +54,11 @@ def delete_container(container_name):
         container = client.containers.get(container_name)
         container.stop()  
         container.remove()
+        delete_from_dictionary(container_name)
+        return jsonify({"message": f"Container '{container_name}' successfully deleted!"}), 200
     except docker.errors.NotFound:
         return jsonify({'Container not found': f'{container_name}'}), 404
-        
-
-    #delete container from list
-    delete_from_dictionary(container_name)
+    
 
          
 @app.route('/read', methods=['GET'])
@@ -68,35 +70,31 @@ def read_container():
     except FileNotFoundError:
         return jsonify({'error': 'Container list missing'}), 500
     
-    return jsonify(containerList),200
-    # (client.containers.list(all))
+    return jsonify(containerList), 200
 
 
 
-
-
-
-@app.route('/start/<container_name>', methods=['GET'])
+@app.route('/start/<container_name>', methods=['POST'])
 def start_container(container_name):
 
     #Check if container exists
     try: 
         container = client.containers.get(container_name)
         container.start()
-        update_container_file_list (container_name)
+        update_container_field (container_name, "state", "running")
         return jsonify({'Container started successfully.': f'{container_name}'}), 200
     except docker.errors.NotFound:
         return jsonify({'Container not found': f'{container_name}'}), 404
 
+    
 
-
-@app.route('/stop/<container_name>', methods=['GET'])
+@app.route('/stop/<container_name>', methods=['POST'])
 def stop_container(container_name):
     
     try: 
         container = client.containers.get(container_name)
         container.stop()
-        update_container_file_list (container_name)
+        update_container_field (container_name, "state", "exited")
         return jsonify({'Container stopped': f'{container_name}'}), 200
 
     except docker.errors.NotFound:

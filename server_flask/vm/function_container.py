@@ -37,7 +37,7 @@ def create_item_container_list(container, vm_port):
     new_container={
         "name": container.name,
         "image": str(container.image),
-        "state": container.status,
+        "status": container.status,
         "vm_port": vm_port,
         "container_port": "2222"
     }

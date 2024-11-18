@@ -81,7 +81,7 @@ def start_container(container_name):
     try: 
         container = client.containers.get(container_name)
         container.start()
-        update_container_field (container_name, "state", "running")
+        update_container_field (container_name, "status", "running")
         return jsonify({'Container started successfully.': f'{container_name}'}), 200
     except docker.errors.NotFound:
         return jsonify({'Container not found': f'{container_name}'}), 404
@@ -94,7 +94,7 @@ def stop_container(container_name):
     try: 
         container = client.containers.get(container_name)
         container.stop()
-        update_container_field (container_name, "state", "exited")
+        update_container_field (container_name, "status", "exited")
         return jsonify({'Container stopped': f'{container_name}'}), 200
 
     except docker.errors.NotFound:

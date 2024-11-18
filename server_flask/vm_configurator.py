@@ -1,3 +1,4 @@
+from time import sleep
 from function_server import *
 from flask_cors import CORS
 import vagrant
@@ -9,6 +10,20 @@ app.config.from_object(__name__)
 
 CORS(app,resources={r'/*':{'origins':'*'}})
 
+
+#check that network configurator server is running
+while (True):
+
+    try:
+        url= f"{NET_SERVER}/network/ping"
+        response=requests.get(url)
+        if (response.status_code == 200):
+            print("Network Configurator Running, initializing network interfaces\n")
+            break     
+    except requests.exceptions.ConnectionError as e:
+        print("Network Configurator Server not found. Check if it's running and if the configured IP and Ports are correct\n")
+    sleep(5)
+    
 
 #Request init list of vm and creations of interfaces
 vm_id_dictionary = init_int()

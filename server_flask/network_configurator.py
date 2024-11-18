@@ -5,6 +5,7 @@ import subprocess
 app = Flask(__name__)
 app.config.from_object(__name__)
 
+ip_host = "10.1.3.1/24"
 
 
 @app.route('/network/create_int/<vm_id>', methods=['POST'])
@@ -17,6 +18,12 @@ def create_int(vm_id):
         #check if OVS exists, if not creates it
         if(not os.path.exists(f"/sys/class/net/{ovs_bridge}")):
             subprocess.run(["sudo", "ovs-vsctl", "add-br", ovs_bridge], check=True)
+            if(os.path.exists(f"/sys/class/net/{veth_name}")):
+                subprocess.run(["sudo", "ovs-vsctl", "add-port", ovs_bridge, veth_name], check=True)
+            #connect bridge to host
+            subprocess.run(["sudo", "ovs-vsctl", "add-port", ovs_bridge, "host-veth", "--", "set", "interface", "host-veth", "type=internal"], check=True)
+            subprocess.run(["sudo", "ip", "addr", "add", ip_host, "dev", "host-veth"], check=True)
+            subprocess.run(["sudo", "ip", "link", "set", "host-veth", "up"], check=True)
             print(f"Created OVS {ovs_bridge}")
 
         #check if veth already exists
@@ -58,14 +65,21 @@ def delete_int(vm_id):
         if(not os.path.exists(f"/sys/class/net/{veth_name}")):
             return jsonify(f'error, the interface {veth_name} does not exists'), 500
 
-        # if (f"Port {veth_name}" in (subprocess.check_output(["sudo", "ovs-vsctl", "show"], text=True))):
-        subprocess.run(["sudo", "ovs-vsctl", "del-port", ovs_bridge, veth_name], check=True)
+        if (f"Port {veth_name}" in (subprocess.check_output(["sudo", "ovs-vsctl", "show"], text=True))):
+            subprocess.run(["sudo", "ovs-vsctl", "del-port", ovs_bridge, veth_name], check=True)
+        
         subprocess.run(["sudo", "ip", "link", "delete", veth_name], check=True)
 
         return jsonify({'status': 'Network interface deleted', 'interface deleted': f'{veth_name}-peer'}), 200
 
     except subprocess.CalledProcessError as e:
         return jsonify({'error': str(e)}), 500
+
+
+
+@app.route('/network/ping', methods=['GET'])
+def ping():
+    return jsonify("server running"), 200
 
 
 

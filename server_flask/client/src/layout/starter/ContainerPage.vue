@@ -11,10 +11,14 @@
             <div v-for="(vmData, index) in containers" :key="index">
                <div v-for="(element, vmName) in vmData" :key="vmName">
                   <br /><br />
-                  <h3>VM: {{vmName}}</h3>
+                  <h3>VM: {{vmName}} <h4>{{containers}}</h4> </h3> 
+                  
+
                   <button
                      type="button"
                      class="btn btn-primary btn-sm"
+                     @click="handleAddSubmit(vmData.ip)"
+
                      >
                   Add Container
                   </button>
@@ -28,7 +32,7 @@
                            <th scope="col">Host Port</th>
                            <th scope="col">Container Port</th>
                            <th></th>
-                        </tr>
+                        </tr> 
                      </thead>
                      <tbody>
                         <tr v-for="(container, sus) in element" :key="sus">
@@ -41,6 +45,8 @@
                                     <button
                                        type="button"
                                        class="btn btn-link btn-success"
+                                       @click="handleStartContainer(container.name,vmData.ip)"
+
                                        >
                                     <i
                                        class="icon-play"
@@ -50,6 +56,8 @@
                                     <button
                                        type="button"
                                        class="btn btn-danger btn-link"
+                                       @click="handleStopContainer(container.name,vmData.ip)"
+
                                        >
                                     <i
                                        class="icon-stop"
@@ -59,6 +67,8 @@
                                     <button
                                        type="button"
                                        class="btn btn-warning btn-link"
+                                       @click="handleReloadContainer(container.name,vmData.ip)"
+
                                        >
                                     <i
                                        class="icon-refresh-00"
@@ -71,7 +81,7 @@
                            <td><button
                               type="button"
                               class="btn btn-danger btn-sm width-150px"
-                              @click="handleDeleteVm(vm)"
+                              @click="handleDeleteContainer(container.name,vmData.ip)"
                               >
                               Delete
                               </button>
@@ -95,46 +105,31 @@
        return {
          activeAddVmModal: false,
          activeUpdateVmModal: false,
-         addVMForm: {
+         addContainerForm: {
            name: "",
-           cpus: "",
-           ram: "",
+           image: "",
+           vm: "",
            ip: "",
          },
-         updateVMForm: {
-           cpus: "",
-           ram: "",
-           ip: "",
-         },
+
          vms: [],
          containers:[]
        };
      },
      methods: {
-       addVm(payload) {
-         const path = "http://localhost:5000/create";
+       addContainer(ip,payload) {
+         const path = `http://${ip}:5002/create`;
          axios
            .post(path, payload)
            .then(() => {
-             this.getVMs();
+             this.getContainers();
            })
            .catch((error) => {
              console.log(error);
-             this.getVMs();
+             this.getContainers();
            });
        },
-       updateVm(vmId, payload) {
-         const path = `http://localhost:5000/update/${vmId}`;
-         axios
-           .post(path, payload)
-           .then(() => {
-             this.getVMs();
-           })
-           .catch((error) => {
-             console.log(error);
-             this.getVMs();
-           });
-       },
+    
        getVMs() {
          const path = "http://localhost:5000/read";
          axios
@@ -152,12 +147,21 @@
        getContainers(){
            console.log("getcontainers")
            let containers=[];
+           let response
+           let i=0
            this.vms.forEach((vm)=>{
                console.log(vm.name)
              axios
                .get(`http://${vm.ip}:5002/read`)
                .then((res) => {
-               containers.push(res.data)
+               response=res.data
+               for (let key in response){
+                console.log(key)
+                for (let element in response[key]){
+                response[key][element].ip=vm.ip}
+               }
+            //    container.ip=vm.ip
+               containers.push(response)
                 })
                .catch((error) => {
                console.error(error);
@@ -170,135 +174,106 @@
        handleAddReset() {
          this.initAddForm();
        },
-       handleUpdateReset() {
-         this.initUpdateForm();
-       },
-       handleAddSubmit() {
-         this.toggleAddVmModal();
+  
+       handleAddSubmit(ip) {
+         this.toggleAddContainerModal();
          // let read = false;
          // if (this.addVMForm.read[0]) {
          //   read = true;
          // }
          const payload = {
-           name: this.addVMForm.name,
-           cpus: this.addVMForm.cpus,
-           ram: this.addVMForm.ram,
-           ip: this.addVMForm.ip,
+           name: this.addContainerForm.name,
+           image: this.addContainerForm.image,
+           vm_port: this.addContainerForm.vm_port,
          };
-         this.addVm(payload);
+         this.addContainer(ip,payload);
          this.initAddForm();
        },
-       handleUpdateSubmit(vm) {
-         this.toggleUpdateVmModal;
-         // let read = false;
-         // if (this.addVMForm.read[0]) {
-         //   read = true;
-         // }
-         const payload = {
-           cpus: this.updateVMForm.cpus,
-           ram: this.updateVMForm.ram,
-           ip: this.updateVMForm.ip,
-         };
-         console.log(vm);
-         this.updateVm(vm, payload);
-         this.initUpdateForm();
-       },
+      
        initAddForm() {
-         this.addVMForm.name = "";
-         this.addVMForm.cpus = "";
-         this.addVMForm.ram = "";
-         this.addVMForm.ip = "";
+         this.addContainerForm.name = "";
+         this.addContainerForm.image = "";
+         this.addContainerForm.vm_port = "";
        },
-       initUpdateForm() {
-         this.updateVMForm.cpus = "";
-         this.updateVMForm.ram = "";
-         this.updateVMForm.ip = "";
-       },
-       toggleAddVmModal() {
+    
+       toggleAddContainerModal() {
          const body = document.querySelector("body");
-         this.activeAddVmModal = !this.activeAddVmModal;
-         if (this.activeAddVmModal) {
+         this.activeAddContainerModal = !this.activeAddContainerModal;
+         if (this.activeAddContainerModal) {
            body.classList.add("modal-open");
          } else {
            body.classList.remove("modal-open");
          }
        },
-       toggleUpdateVmModal() {
-         const body = document.querySelector("body");
-         this.activeUpdateVmModal = !this.activeUpdateVmModal;
-         if (this.activeUpdateVmModal) {
-           body.classList.add("modal-open");
-         } else {
-           body.classList.remove("modal-open");
-         }
-       },
+      
    
-       handleDeleteVm(vm) {
-         this.removeVm(vm.name);
+       handleDeleteContainer(name,ip) {
+         this.removeContainer(name,ip);
        },
-       removeVm(vmID) {
-         const path = `http://localhost:5000/delete/${vmID}`;
+       removeContainer(name,ip) {
+         const path = `http://${ip}:5000/delete/${name}`;
          axios
            .delete(path)
            .then(() => {
-             this.getVMs();
-             this.message = "Vm removed!";
+             this.getContainers();
+             this.message = "Container removed!";
              this.showMessage = true;
            })
            .catch((error) => {
              console.error(error);
-             this.getVMs();
+             this.getContainers();
            });
        },
-       handleReloadVm(vm) {
-         this.reloadVm(vm.name);
+       handleReloadContainer(name,ip) {
+         this.reloadContainer(name,ip);
        },
-       reloadVm(vmID) {
-         const path = `http://localhost:5000/reload/${vmID}`;
+       reloadContainer(name,ip) {
+         const path = `http://${ip}:5002/reload/${name}`;
          axios
            .post(path)
            .then(() => {
-             this.getVMs();
-             this.message = "Vm reloaded!";
+             this.getContainers();
+             this.message = "Container reloaded!";
              this.showMessage = true;
            })
            .catch((error) => {
              console.error(error);
-             this.getVms();
+             this.getContainers();
            });
        },
-       handleStartVm(vm) {
-         this.startVm(vm.name);
+       handleStartContainer(name,ip) {
+         this.startContainer(name,ip);
        },
-       startVm(vmID) {
-         const path = `http://localhost:5000/start/${vmID}`;
+       startContainer(name,ip) {
+            console.log(name,ip)
+         const path = `http://${ip}:5002/start/${name}`;
          axios
            .post(path)
            .then(() => {
-             this.getVMs();
-             this.message = "Vm reloaded!";
+             this.getContainers();
+             this.message = "Container Started!";
              this.showMessage = true;
            })
            .catch((error) => {
              console.error(error);
-             this.getVms();
+             this.getContainers();
            });
        },
-       handleStopVm(vm) {
-         this.stopVm(vm.name);
+       handleStopContainer(name,ip) {
+         this.stopContainer(name,ip);
        },
-       stopVm(vmID) {
-         const path = `http://localhost:5000/stop/${vmID}`;
+       stopContainer(name,ip) {
+         const path = `http://${ip}:5000/stop/${name}`;
          axios
            .post(path)
            .then(() => {
-             this.getVMs();
-             this.message = "Vm stopped!";
+             this.getContainers();
+             this.message = "Container stopped!";
              this.showMessage = true;
            })
            .catch((error) => {
              console.error(error);
-             this.getVms();
+             this.getContainers();
            });
        },
      },
@@ -306,7 +281,7 @@
        console.log(this);
        this.getVMs();
        setTimeout(() => {
-         this.getContainers(); // DA CAMBIARE
+         this.getContainers(); // DA CAMBIARE (concatenare)
        }, 1000);
    },
    };

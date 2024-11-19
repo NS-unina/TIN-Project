@@ -437,7 +437,7 @@ export default {
         .post(path)
         .then(() => {
           this.getVMs();
-          this.message = "Vm reloaded!";
+          this.message = "Vm started!";
           this.showMessage = true;
         })
         .catch((error) => {

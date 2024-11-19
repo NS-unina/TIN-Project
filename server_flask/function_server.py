@@ -153,12 +153,10 @@ def init_int():
     #Request creating already existing interfaces
     for key, value in vm_dictionary.items():
         veth_name = value.get("id")
-        try:
-            url= f"{NET_SERVER}/network/create_int/{veth_name}"
-            response=requests.post(url,json="")
-            print (response.json())
-        except Exception as e:
-            print (jsonify({"error": str(e)}), 400)
+
+        url= f"{NET_SERVER}/network/create_int/{veth_name}"
+        response=requests.post(url,json="")
+        print (response.json())
 
     return vm_dictionary
 

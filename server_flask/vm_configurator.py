@@ -34,7 +34,7 @@ while (True):
     except requests.exceptions.ConnectionError as e:
         print("Network Configurator Server not found. Check if it's running and if the configured IP and Ports are correct\n")
     except Exception as e:
-        print (jsonify({"error": str(e)}), 400)
+        print (jsonify({"error": f"Error {e}"}), 400)
     sleep(5)
     
 

@@ -9,7 +9,6 @@ import shutil
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
-from datetime import datetime
 
 
 app = Flask (__name__)
@@ -41,28 +40,32 @@ while (True):
 
 # Periodic function to update vm
 def sync_vm():
-
     try:
         for vm_name in os.listdir(VM_PATH):
             vm_path = os.path.join(VM_PATH, vm_name)
             if os.path.isdir(vm_path):
+                if (not os.path.exists(os.path.join(vm_path,"Vagrantfile"))):
+                    continue                   
                 v = vagrant.Vagrant(vm_path)
                 status = v.status()
                 update_item_vm_list(vm_name, "status", status[0].state)
                 print ("ok")
+
+    except VagrantfileNotFound as e:
+        print ({"error": f"{e.message}"})
     except VM_listFileNotFound as e:
         return ({"error": f"{e.message}"})
     except FieldNotValid as e:
         return ({'error': f"{e.message}"})
     except Exception as e:
-        return ({"error": f"Error {e}"}), 500
+        return ({"error": f"Error {e}"})
 
 
 
 # Configuration of BackgroundScheduler
 scheduler = BackgroundScheduler()
 scheduler.start()
-scheduler.add_job(sync_vm, trigger=IntervalTrigger(seconds=15))
+scheduler.add_job(sync_vm, trigger=IntervalTrigger(seconds=10))
 
 
 

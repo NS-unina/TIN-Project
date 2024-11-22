@@ -1,6 +1,6 @@
+from exception_container import *
 import docker
 import json
-from flask import jsonify
 import socket
 
 
@@ -20,8 +20,6 @@ def init():
         container_list = open('Containers.json','w')
         container_list.write(json.dumps(containerList, indent=4))
         container_list.close()
-    except json.JSONDecodeError as e:
-        return jsonify ({'error': f"{e}"}), 400
     print (containerList)
 
 
@@ -32,7 +30,7 @@ def create_item_container_list(container, vm_port):
         with open('Containers.json', 'r') as container_list:
             containerList = json.load(container_list)
     except FileNotFoundError:
-        return jsonify({'error': 'File Containers not found'}), 404
+        raise ContainerFileNotFound ("Container file not found.", error_code=404)
 
     new_container={
         "name": container.name,
@@ -51,13 +49,13 @@ def create_item_container_list(container, vm_port):
     
 
 #Search value of a field in dictionary
-def search_container_by_field(field, value):
+def check_if_value_field_exists(field, value):
 
     try:
         with open('Containers.json', 'r') as container_list:
             containerList = json.load(container_list)
     except FileNotFoundError:
-        return jsonify({'error': 'File Containers not found'}), 404   
+        raise ContainerFileNotFound ("Container file not found.", error_code=404)
 
     for entry in containerList.get(f"{hostname}", []):
         if entry.get(f"{field}") == value:
@@ -70,32 +68,36 @@ def update_container_field (container_name, field, value):
         with open('Containers.json', 'r') as container_list:
             containerList = json.load(container_list)
     except FileNotFoundError:
-        return jsonify({'error': 'File Containers not found'}), 404
+        raise ContainerFileNotFound ("Container file not found.", error_code=404)
 
-    try: 
-        for entry in containerList.get(f"{hostname}", []):
-            if entry.get(f"name") == container_name:
-                entry[f"{field}"] = value
+    for entry in containerList.get(f"{hostname}", []):
+        if entry.get(f"name") == container_name:
+            entry[f"{field}"] = value
+    print(containerList)
 
-        print(containerList)
-
-        with open('Containers.json', 'w') as container_list:
-            container_list.write(json.dumps(containerList, indent=4))
-
-    except docker.errors.NotFound:
-        return jsonify({'error': "Container not found: f'{container_name}'"}), 404
+    with open('Containers.json', 'w') as container_list:
+        container_list.write(json.dumps(containerList, indent=4))
     
 
 #Delete from dictionary
 def delete_from_dictionary(container_name):
-    
     try:
         with open('Containers.json', 'r') as container_list:
             containerList = json.load(container_list)
     except FileNotFoundError:
-        return jsonify({'error': 'File Containers not found'}), 404
+        raise ContainerFileNotFound ("Container file not found.", error_code=404)
 
     containerList[f"{hostname}"] = [entry for entry in containerList.get(f"{hostname}", []) if entry.get("name") != container_name]
     
     with open('Containers.json', 'w') as container_list:
         container_list.write(json.dumps(containerList, indent=4))
+
+
+def get_all_container_dictionary ():
+    try:
+        with open('Containers.json', 'r') as container_list:
+            containerList = json.load(container_list)
+    except FileNotFoundError:
+        raise ContainerFileNotFound ("Container file not found.", error_code=404)
+    
+    return containerList

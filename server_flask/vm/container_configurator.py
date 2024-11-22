@@ -9,8 +9,10 @@ app = Flask(__name__)
 CORS(app,resources={r'/*':{'origins':'*'}})
 
 #Init container list
-containerList=init()
-
+try:
+    containerList=init()
+except json.JSONDecodeError as e:
+    print ({'error': f"{e}"}), 400
 
 
 @app.route('/create', methods=['POST'])
@@ -27,38 +29,47 @@ def create_container():
     if not name:
         return jsonify({"error": "Name field is needed"}), 400
     
-    #Check if name already exists
-    if search_container_by_field("name", name):
-        return jsonify({'error': f'Container name {name} already exists.'}), 400
-
-    #Check if port already exists
-    if search_container_by_field("vm_port", vm_port):
-        return jsonify({'error': f'Container port {vm_port} already in use.'}), 400
-    
     try:
+
+        #Check if name already exists
+        if check_if_value_field_exists("name", name):
+            return jsonify({'error': f'Container name {name} already exists.'}), 400
+
+        #Check if port already exists
+        if check_if_value_field_exists("vm_port", vm_port):
+            return jsonify({'error': f'Container port {vm_port} already in use.'}), 400
+        
         client.containers.run(docker_image,name=name, detach=True, ports={2222:vm_port})
         container=client.containers.get(name)
         create_item_container_list(container, vm_port)
+
+        return jsonify({"message": f"Container '{name}' successfully created!"}), 201
+
+    except ContainerFileNotFound as e:
+        return jsonify ({'error': f"{e.message}"}), e.error_code
     except docker.errors.APIError as e:
         return jsonify({'error': f'{e}'})
         
-    return jsonify({"message": f"Container '{name}' successfully created!"}), 201
         
 
 @app.route('/delete/<container_name>', methods=['DELETE'])
 def delete_container(container_name):
 
-    #Check if name already exists
-    if not search_container_by_field("name", container_name):
-        return jsonify({'error': f"Container name {container_name} doesn't exists."})
-    
-    #delete container
-    try: 
+    try:
+        #Check if name already exists
+        if not check_if_value_field_exists("name", container_name):
+            return jsonify({'error': f"Container name {container_name} doesn't exists."})
+
+        #delete container
         container = client.containers.get(container_name)
         container.stop()  
         container.remove()
         delete_from_dictionary(container_name)
+
         return jsonify({"message": f"Container '{container_name}' successfully deleted!"}), 200
+    
+    except ContainerFileNotFound as e:
+        return jsonify ({'error': f"{e.message}"}), e.error_code
     except docker.errors.NotFound:
         return jsonify({'Container not found': f'{container_name}'}), 404
     
@@ -66,14 +77,12 @@ def delete_container(container_name):
          
 @app.route('/read', methods=['GET'])
 def read_container():
-    
     try:
-        with open('Containers.json', 'r') as container_list:
-            containerList = json.load(container_list)
-    except FileNotFoundError:
-        return jsonify({'error': 'Container list missing'}), 500
+        containerList= get_all_container_dictionary() 
+        return jsonify(containerList), 200
     
-    return jsonify(containerList), 200
+    except ContainerFileNotFound as e:
+        return jsonify ({'error': f"{e.message}"}), e.error_code
 
 
 
@@ -86,6 +95,9 @@ def start_container(container_name):
         container.start()
         update_container_field (container_name, "status", "running")
         return jsonify({'Container started successfully.': f'{container_name}'}), 200
+    
+    except ContainerFileNotFound as e:
+        return jsonify ({'error': f"{e.message}"}), e.error_code
     except docker.errors.NotFound:
         return jsonify({'Container not found': f'{container_name}'}), 404
 
@@ -100,6 +112,8 @@ def stop_container(container_name):
         update_container_field (container_name, "status", "exited")
         return jsonify({'Container stopped': f'{container_name}'}), 200
 
+    except ContainerFileNotFound as e:
+        return jsonify ({'error': f"{e.message}"}), e.error_code
     except docker.errors.NotFound:
         return jsonify({'Container not found': f'{container_name}'}), 404
         

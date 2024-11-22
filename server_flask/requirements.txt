@@ -1,7 +1,9 @@
+APScheduler==3.10.4
 blinker==1.8.2
 certifi==2024.8.30
 charset-normalizer==3.4.0
 click==8.1.7
+docker==7.1.0
 Flask==3.0.3
 Flask-Cors==3.0.10
 idna==3.10
@@ -10,7 +12,9 @@ Jinja2==3.1.4
 MarkupSafe==3.0.2
 nodeenv==1.9.1
 python-vagrant==1.0.0
+pytz==2024.2
 requests==2.32.3
 six==1.16.0
+tzlocal==5.2
 urllib3==2.2.3
 Werkzeug==3.0.6

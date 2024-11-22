@@ -7,7 +7,7 @@ app = Flask(__name__)
 app.config.from_object(__name__)
 
 ip_host = "10.1.3.1/24"
-
+ip_onos = "127.0.0.1"
 
 @app.route('/network/create_int/<vm_id>', methods=['POST'])
 def create_int(vm_id):
@@ -19,13 +19,18 @@ def create_int(vm_id):
         #check if OVS exists, if not creates it
         if(not os.path.exists(f"/sys/class/net/{ovs_bridge}")):
             subprocess.run(["sudo", "ovs-vsctl", "add-br", ovs_bridge], check=True)
-            if(os.path.exists(f"/sys/class/net/{veth_name}")):
-                subprocess.run(["sudo", "ovs-vsctl", "add-port", ovs_bridge, veth_name], check=True)
+            subprocess.run(["sudo", "ovs-vsctl", "set", "bridge", ovs_bridge, "protocols=OpenFlow10", "--", "set-controller", ovs_bridge, f"tcp:{ip_onos}:6653"], check=True)
             #connect bridge to host
             subprocess.run(["sudo", "ovs-vsctl", "add-port", ovs_bridge, "host-veth", "--", "set", "interface", "host-veth", "type=internal"], check=True)
+            if(os.path.exists(f"/sys/class/net/{veth_name}")):
+                subprocess.run(["sudo", "ovs-vsctl", "add-port", ovs_bridge, veth_name], check=True)
+            print(f"Created OVS {ovs_bridge}")
+
+        #check if host-veth down
+        state = subprocess.check_output(["ip", "link", "show", "host-veth"], text=True)
+        if ("state DOWN" in state):
             subprocess.run(["sudo", "ip", "addr", "add", ip_host, "dev", "host-veth"], check=True)
             subprocess.run(["sudo", "ip", "link", "set", "host-veth", "up"], check=True)
-            print(f"Created OVS {ovs_bridge}")
 
         #check if veth already exists
         if(os.path.exists(f"/sys/class/net/{veth_name}")):

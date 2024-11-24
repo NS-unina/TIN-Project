@@ -1,0 +1,307 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "VM API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "/vm/create": {
+            "post": {
+                "tags": [
+                    "VM Management"
+                ],
+                "description": "Creates a new virtual machine with the specified parameters.",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "required": true,
+                        "description": "JSON payload containing VM creation details",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "Name of the virtual machine (required)"
+                                },
+                                "box": {
+                                    "type": "string",
+                                    "description": "Vagrant box to use (default: 'generic/ubuntu2004')"
+                                },
+                                "cpus": {
+                                    "type": "integer",
+                                    "description": "Number of CPUs to allocate (default: 2)"
+                                },
+                                "ram": {
+                                    "type": "integer",
+                                    "description": "Amount of RAM in MB (default: 1024)"
+                                },
+                                "ip": {
+                                    "type": "string",
+                                    "description": "IP address of the virtual machine (required)"
+                                }
+                            },
+                            "required": [
+                                "name",
+                                "ip"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created: VM successfully created"
+                    },
+                    "400": {
+                        "description": "Bad Request: Missing required fields"
+                    },
+                    "409": {
+                        "description": "Conflict: VM already exists"
+                    },
+                    "500": {
+                        "description": "Internal Server Error: Error during VM creation"
+                    }
+                }
+            }
+        },
+        "/vm/update/{vm_name}": {
+            "post": {
+                "tags": [
+                    "VM Management"
+                ],
+                "description": "Updates the configuration of a specified virtual machine (VM).",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "vm_name",
+                        "required": true,
+                        "type": "string",
+                        "description": "The name of the virtual machine to update."
+                    },
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "required": true,
+                        "description": "JSON payload containing the fields to update (at least one of 'cpus', 'ram', or 'ip' is required).",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "cpus": {
+                                    "type": "integer",
+                                    "description": "Number of CPUs to allocate to the VM."
+                                },
+                                "ram": {
+                                    "type": "integer",
+                                    "description": "Amount of RAM in MB to allocate to the VM."
+                                },
+                                "ip": {
+                                    "type": "string",
+                                    "description": "IP address of the VM."
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "VM successfully updated",
+                        "examples": {
+                            "application/json": {
+                                "message": "VM 'my-vm' successfully updated!",
+                                "CPU": "2",
+                                "RAM": "1024",
+                                "IP": "10.10.10.10"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request: At least one of 'cpus', 'ram', or 'ip' must be provided"
+                    },
+                    "404": {
+                        "description": "Not Found: VM does not exist or Vagrantfile not found"
+                    },
+                    "500": {
+                        "description": "Internal Server Error: Error while updating VM"
+                    }
+                }
+            }
+        },
+        "/vm/delete/{vm_name}": {
+            "delete": {
+                "tags": [
+                    "VM Management"
+                ],
+                "description": "Deletes a virtual machine and its associated resources.",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "vm_name",
+                        "required": true,
+                        "type": "string",
+                        "description": "The name of the virtual machine to delete."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK: VM successfully deleted"
+                    },
+                    "404": {
+                        "description": "Not Found: VM does not exist"
+                    },
+                    "500": {
+                        "description": "Internal Server Error: General error during VM deletion"
+                    }
+                }
+            }
+        },
+        "/vm/list": {
+            "get": {
+                "tags": [
+                    "Virtual Machine"
+                ],
+                "description": "Reads and returns all the information about all virtual machines.",
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved list of VMs",
+                        "examples": {
+                            "application/json": {
+                                "vms": [
+                                    {
+                                        "name": "my-vm",
+                                        "status": "running",
+                                        "ram": "1024",
+                                        "cpus": "2",
+                                        "ip": "10.10.10.10"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found: VM list file does not exist"
+                    },
+                    "500": {
+                        "description": "Internal Server Error: Error while reading VM statuses"
+                    }
+                }
+            }
+        },
+        "/start/{vm_name}": {
+            "post": {
+                "tags": [
+                    "VM Operations"
+                ],
+                "description": "Starts a specified virtual machine (VM).",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "vm_name",
+                        "required": true,
+                        "type": "string",
+                        "description": "The name of the virtual machine to start."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK: VM successfully started"
+                    },
+                    "404": {
+                        "description": "Not Found: VM does not exist"
+                    },
+                    "500": {
+                        "description": "Internal Server Error: Error during VM start"
+                    }
+                }
+            }
+        },
+        "/stop/{vm_name}": {
+            "post": {
+                "tags": [
+                    "VM Operations"
+                ],
+                "description": "Stops a specified virtual machine (VM).",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "vm_name",
+                        "required": true,
+                        "type": "string",
+                        "description": "The name of the virtual machine to stop."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK: VM successfully stopped"
+                    },
+                    "404": {
+                        "description": "Not Found: VM does not exist"
+                    },
+                    "500": {
+                        "description": "Internal Server Error: Error during VM stop"
+                    }
+                }
+            }
+        },
+        "/reload/{vm_name}": {
+            "post": {
+                "tags": ["VM Operations"],
+                "description": "Reloads a specified virtual machine (VM).",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "vm_name",
+                        "required": true,
+                        "type": "string",
+                        "description": "The name of the virtual machine to reload."
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "OK: VM successfully reloaded"
+                    },
+                    "404": {
+                        "description": "Not Found: VM does not exist"
+                    },
+                    "500": {
+                        "description": "Internal Server Error: Error during VM reload"
+                    }
+                }
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Virtual Machine",
+            "description": ""
+        },
+        {
+            "name": "VM Management",
+            "description": "Virtual machine lifecycle management"
+        },
+        {
+            "name": "VM Operations",
+            "description": "Virtual machine status management"
+        }
+    ]
+}

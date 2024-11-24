@@ -8,10 +8,7 @@ import json
 import requests
 
 #Directory for vms
-VM_PATH = './vm'
-
-#OVS 
-ovs_bridge = "br0"
+VM_PATH = '../vm'
 
 #Server Address for network configuration (da fare nel file di config)
 NET_SERVER="http://127.0.0.1:5001"

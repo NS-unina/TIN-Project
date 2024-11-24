@@ -1,11 +1,12 @@
-from time import sleep
-from function_server import *
-from flask import jsonify
+from function import *
 from exception import *
+from flask import jsonify, send_from_directory
 from flask_cors import CORS
+from time import sleep
 import vagrant
 import shutil
 
+from flask_swagger_ui import get_swaggerui_blueprint
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
@@ -13,6 +14,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 
 app = Flask (__name__)
 app.config.from_object(__name__)
+
 
 CORS(app,resources={r'/*':{'origins':'*'}})
 
@@ -70,7 +72,7 @@ scheduler.add_job(sync_vm, trigger=IntervalTrigger(seconds=10))
 
 
 
-@app.route('/create', methods=['POST'])
+@app.route('/vm/create', methods=['POST'])
 def create_vm():
     data = request.json
     vm_name = data.get('name')
@@ -115,7 +117,7 @@ def create_vm():
         return jsonify({"message": f"VM '{vm_name}' successfully created!"}), 201
 
     except FileExistsError:
-        return jsonify({"error": f"VM '{vm_name}' already exist"}), 404
+        return jsonify({"error": f"VM '{vm_name}' already exist"}), 409
     except VM_listFileNotFound as e:
         return jsonify ({'error': f"VM_list doesn't exists."}), e.error_code
     except Exception as e:
@@ -123,7 +125,7 @@ def create_vm():
 
 
 
-@app.route('/delete/<vm_name>', methods=['DELETE'])
+@app.route('/vm/delete/<vm_name>', methods=['DELETE'])
 def delete_vm(vm_name):
 
     try:
@@ -158,7 +160,7 @@ def delete_vm(vm_name):
         return jsonify({"error": f"Error deleting vm. {e}"}), 500
 
 
-@app.route('/read', methods=['GET'])
+@app.route('/vm/list', methods=['GET'])
 def read_vms():
 
     try:
@@ -175,7 +177,7 @@ def read_vms():
         return jsonify({"error": f"Error in reading vms status. {e}"}), 500
 
 
-@app.route('/update/<vm_name>', methods=['POST'])
+@app.route('/vm/update/<vm_name>', methods=['POST'])
 def update_vm(vm_name):
     data = request.json
     vm_cpus = data.get('cpus') 
@@ -289,6 +291,24 @@ def power_vm(vm_name):
     except Exception as e:
         return jsonify({"error": f"Error starting  vm. {e}"}), 500
 
+
+#Swagger docs api
+SWAGGER_URL = '/apidocs'
+API_DOCS_PATH = 'vm_docs.json'
+
+swagger_ui_blueprint = get_swaggerui_blueprint(
+    SWAGGER_URL,
+    f'/{API_DOCS_PATH}',
+    config={
+        'app_name': "VM API Documentation"
+    }
+)
+app.register_blueprint(swagger_ui_blueprint, url_prefix=SWAGGER_URL)
+
+#Request for documentation
+@app.route(f'/{API_DOCS_PATH}')
+def serve_swagger_file():
+    return send_from_directory('.', API_DOCS_PATH)
 
 
 

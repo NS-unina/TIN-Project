@@ -1,6 +1,7 @@
-from function_server import *
-from flask import jsonify
+from flask import Flask, jsonify, send_from_directory
+from flask_swagger_ui import get_swaggerui_blueprint
 import subprocess
+import os
 
 
 app = Flask(__name__)
@@ -8,6 +9,7 @@ app.config.from_object(__name__)
 
 ip_host = "10.1.3.1/24"
 ip_onos = "127.0.0.1"
+ovs_bridge = "br0"
 
 @app.route('/network/create_int/<vm_id>', methods=['POST'])
 def create_int(vm_id):
@@ -22,18 +24,20 @@ def create_int(vm_id):
             subprocess.run(["sudo", "ovs-vsctl", "set", "bridge", ovs_bridge, "protocols=OpenFlow10", "--", "set-controller", ovs_bridge, f"tcp:{ip_onos}:6653"], check=True)
             #connect bridge to host
             subprocess.run(["sudo", "ovs-vsctl", "add-port", ovs_bridge, "host-veth", "--", "set", "interface", "host-veth", "type=internal"], check=True)
-            if(os.path.exists(f"/sys/class/net/{veth_name}")):
-                subprocess.run(["sudo", "ovs-vsctl", "add-port", ovs_bridge, veth_name], check=True)
             print(f"Created OVS {ovs_bridge}")
-
+        
         #check if host-veth down
         state = subprocess.check_output(["ip", "link", "show", "host-veth"], text=True)
         if ("state DOWN" in state):
             subprocess.run(["sudo", "ip", "addr", "add", ip_host, "dev", "host-veth"], check=True)
             subprocess.run(["sudo", "ip", "link", "set", "host-veth", "up"], check=True)
+            
 
         #check if veth already exists
         if(os.path.exists(f"/sys/class/net/{veth_name}")):
+            ovs_connection = subprocess.check_output(["sudo", "ovs-vsctl", "show"], text=True)
+            if (not veth_name in ovs_connection):
+                subprocess.run(["sudo", "ovs-vsctl", "add-port", ovs_bridge, veth_name], check=True)
             #check if down
             state = subprocess.check_output(["ip", "link", "show", veth_name], text=True)
             if ("state DOWN" in state):
@@ -87,6 +91,25 @@ def delete_int(vm_id):
 def ping():
     return jsonify("server running"), 200
 
+
+
+#Swagger docs api
+SWAGGER_URL = '/apidocs'
+API_DOCS_PATH = 'network_docs.json'
+
+swagger_ui_blueprint = get_swaggerui_blueprint(
+    SWAGGER_URL,
+    f'/{API_DOCS_PATH}',
+    config={
+        'app_name': "VM API Documentation"
+    }
+)
+app.register_blueprint(swagger_ui_blueprint, url_prefix=SWAGGER_URL)
+
+#Request for documentation
+@app.route(f'/{API_DOCS_PATH}')
+def serve_swagger_file():
+    return send_from_directory('.', API_DOCS_PATH)
 
 
 if __name__ == '__main__':

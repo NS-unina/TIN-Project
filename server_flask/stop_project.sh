@@ -11,6 +11,9 @@ pkill -f "flask --app network_configurator.py run -p 5001"
 echo "Stopping Docker 'onos'"
 docker stop onos
 
+# Stop client 
+echo "Stopping web client"
+pkill -f "npm run dev"
 
 
 

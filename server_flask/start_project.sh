@@ -11,3 +11,8 @@ gnome-terminal -- bash -c "source bin/activate; cd server_network; flask --app n
 # Start onos container Docker
 echo "Starting onos container"
 gnome-terminal -- bash -c "docker start onos; exec bash"
+
+# Start client 
+echo "Starting web client"
+gnome-terminal -- bash -c "source bin/activate; cd client; npm run dev; exec bash"
+

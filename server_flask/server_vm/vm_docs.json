@@ -198,7 +198,7 @@
                 }
             }
         },
-        "/start/{vm_name}": {
+        "/vm/start/{vm_name}": {
             "post": {
                 "tags": [
                     "VM Operations"
@@ -229,7 +229,7 @@
                 }
             }
         },
-        "/stop/{vm_name}": {
+        "/vm/stop/{vm_name}": {
             "post": {
                 "tags": [
                     "VM Operations"
@@ -260,7 +260,7 @@
                 }
             }
         },
-        "/reload/{vm_name}": {
+        "/vm/reload/{vm_name}": {
             "post": {
                 "tags": ["VM Operations"],
                 "description": "Reloads a specified virtual machine (VM).",

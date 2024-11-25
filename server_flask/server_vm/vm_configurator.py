@@ -205,7 +205,7 @@ def update_vm(vm_name):
         return jsonify({"error": f"Error updating vm. {e}"}), 500
 
 
-@app.route('/start/<vm_name>', methods=['POST'])
+@app.route('/vm/start/<vm_name>', methods=['POST'])
 def power_start_vm(vm_name):
 
     try:
@@ -229,7 +229,7 @@ def power_start_vm(vm_name):
         return jsonify({"error": f"Error starting  vm. {e}"}), 500
 
 
-@app.route('/stop/<vm_name>', methods=['POST'])
+@app.route('/vm/stop/<vm_name>', methods=['POST'])
 def power_stop_vm(vm_name):
 
     try:
@@ -254,7 +254,7 @@ def power_stop_vm(vm_name):
 
 
 
-@app.route('/reload/<vm_name>', methods=['POST'])
+@app.route('/vm/reload/<vm_name>', methods=['POST'])
 def power_vm(vm_name):
 
     try:

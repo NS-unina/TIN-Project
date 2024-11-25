@@ -26,8 +26,12 @@ Vue.use(BlackDashboard);
 Vue.use(VueRouter);
 Vue.use(RouterPrefetch);
 
-export const store = reactive({
+export const selectedVm = reactive({
   vmId: "",
+});
+
+export const selectedContainer = reactive({
+  containerIp: "",
 });
 
 new Vue({

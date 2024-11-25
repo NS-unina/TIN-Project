@@ -1,5 +1,5 @@
 <script setup>
-import { store } from "../../main.js";
+import { selectedVm } from "../../main.js";
 </script>
 
 <template>
@@ -74,7 +74,7 @@ import { store } from "../../main.js";
                   <button
                     type="button"
                     class="btn btn-warning btn-sm"
-                    @click="(store.vmId = vm.name), toggleUpdateVmModal()"
+                    @click="(selectedVm.vmId = vm.name), toggleUpdateVmModal()"
                   >
                     Update
                   </button>
@@ -203,7 +203,7 @@ import { store } from "../../main.js";
               class="close"
               data-dismiss="modal"
               aria-label="Close"
-              @click="(store.vmId = ''), toggleUpdateVmModal()"
+              @click="(selectedVm.vmId = ''), toggleUpdateVmModal()"
             >
               <span aria-hidden="true">&times;</span>
             </button>
@@ -249,7 +249,7 @@ import { store } from "../../main.js";
                 <button
                   type="button"
                   class="btn btn-primary btn-sm"
-                  @click="handleUpdateSubmit(store.vmId)"
+                  @click="handleUpdateSubmit(selectedVm.vmId)"
                 >
                   Submit
                 </button>
@@ -294,7 +294,7 @@ export default {
   },
   methods: {
     addVm(payload) {
-      const path = "http://localhost:5000/create";
+      const path = "http://localhost:5000/vm/create";
       axios
         .post(path, payload)
         .then(() => {
@@ -306,7 +306,7 @@ export default {
         });
     },
     updateVm(vmId, payload) {
-      const path = `http://localhost:5000/update/${vmId}`;
+      const path = `http://localhost:5000/vm/update/${vmId}`;
       axios
         .post(path, payload)
         .then(() => {
@@ -318,7 +318,7 @@ export default {
         });
     },
     getVMs() {
-      const path = "http://localhost:5000/read";
+      const path = "http://localhost:5000/vm/list";
       axios
         .get(path)
         .then((res) => {
@@ -398,7 +398,7 @@ export default {
       this.removeVm(vm.name);
     },
     removeVm(vmID) {
-      const path = `http://localhost:5000/delete/${vmID}`;
+      const path = `http://localhost:5000/vm/delete/${vmID}`;
       axios
         .delete(path)
         .then(() => {

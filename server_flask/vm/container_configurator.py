@@ -20,7 +20,7 @@ def create_container():
     data = request.json
     name = data.get('name')
     docker_image = data.get('image')
-    vm_port = data.get('port')
+    vm_port = data.get('vm_port')
 
     if not docker_image:
         return jsonify({"error": "Image field is needed"}), 400

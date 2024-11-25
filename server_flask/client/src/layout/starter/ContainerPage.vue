@@ -1,5 +1,5 @@
 <script setup>
-   import { store } from "../../main.js";
+   import { selectedContainer } from "../../main.js";
 </script>
 <template>
    <div class="container">
@@ -11,13 +11,12 @@
             <div v-for="(vmData, index) in containers" :key="index">
                <div v-for="(element, vmName) in vmData" :key="vmName">
                   <br /><br />
-                  <h3>VM: {{vmName}} <h4>{{containers}}</h4> </h3> 
+                  <h3>VM: {{vmName}} <h4>{{vmData[vmName][0].ip}}</h4> </h3> 
                   
-
                   <button
                      type="button"
                      class="btn btn-primary btn-sm"
-                     @click="handleAddSubmit(vmData.ip)"
+                     @click="(selectedContainer.containerIp = vmData[vmName][0].ip), toggleAddContainerModal()"
 
                      >
                   Add Container
@@ -93,6 +92,88 @@
                   </table>
                </div>
             </div>
+
+            <!-- add new container modal -->
+    <div
+      ref="addContainerModal"
+      class="modal fade"
+      :class="{ show: activeAddContainerModal, 'd-block': activeAddContainerModal }"
+      tabindex="-1"
+      role="dialog"
+    >
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Add a new Container</h5>
+            <button
+              type="button"
+              class="close"
+              data-dismiss="modal"
+              aria-label="Close"
+              @click="(selectedContainer.containerIp = ''),toggleAddContainerModal()"
+            >
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <form>
+              <div class="mb-3">
+                <label for="addContainerName" class="form-label">Name:</label>
+                <input
+                  type="text"
+                  style="color: black"
+                  class="form-control"
+                  id="addContainerName"
+                  v-model="addContainerForm.name"
+                  placeholder="Enter name of the Container"
+                />
+              </div>
+              <div class="mb-3">
+                <label for="addContainerImage" class="form-label">Image:</label>
+                <input
+                  type="text"
+                  style="color: black"
+                  class="form-control"
+                  id="addContainerImage"
+                  v-model="addContainerForm.image"
+                  placeholder="Enter name of the image"
+                />
+              </div>
+              <div class="mb-3">
+                <label for="addContainerVmPort" class="form-label">Vm_Port:</label>
+                <input
+                  type="text"
+                  style="color: black"
+                  class="form-control"
+                  id="addContainerVmPort"
+                  v-model="addContainerForm.vm_port"
+                  placeholder="Enter the VM port to expose the service"
+                />
+              </div>
+
+
+              <div class="btn-group" role="group">
+                <button
+                  type="button"
+                  class="btn btn-primary btn-sm"
+                  @click="handleAddSubmit(selectedContainer.containerIp)"
+                >
+                  Submit
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-danger btn-sm"
+                  @click="handleAddReset"
+                >
+                  Reset
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
          </div>
       </div>
    </div>
@@ -103,13 +184,13 @@
    export default {
      data() {
        return {
-         activeAddVmModal: false,
-         activeUpdateVmModal: false,
+         activeAddContainerModal: false,
+         activeUpdateContainerModal: false,
          addContainerForm: {
            name: "",
            image: "",
-           vm: "",
-           ip: "",
+           vm_port: "",
+
          },
 
          vms: [],
@@ -131,7 +212,7 @@
        },
     
        getVMs() {
-         const path = "http://localhost:5000/read";
+         const path = "http://localhost:5000/vm/list";
          axios
            .get(path)
            .then((res) => {
@@ -148,15 +229,14 @@
            console.log("getcontainers")
            let containers=[];
            let response
-           let i=0
            this.vms.forEach((vm)=>{
-               console.log(vm.name)
+              //  console.log(vm.name)
              axios
                .get(`http://${vm.ip}:5002/read`)
                .then((res) => {
                response=res.data
                for (let key in response){
-                console.log(key)
+                //console.log(key)
                 for (let element in response[key]){
                 response[key][element].ip=vm.ip}
                }
@@ -167,7 +247,7 @@
                console.error(error);
                });
            this.containers=containers
-           console.log(this.containers)
+           //console.log(this.containers)
            })
        },
    
@@ -176,6 +256,7 @@
        },
   
        handleAddSubmit(ip) {
+        console.log(ip)
          this.toggleAddContainerModal();
          // let read = false;
          // if (this.addVMForm.read[0]) {
@@ -211,7 +292,7 @@
          this.removeContainer(name,ip);
        },
        removeContainer(name,ip) {
-         const path = `http://${ip}:5000/delete/${name}`;
+         const path = `http://${ip}:5002/delete/${name}`;
          axios
            .delete(path)
            .then(() => {
@@ -263,7 +344,7 @@
          this.stopContainer(name,ip);
        },
        stopContainer(name,ip) {
-         const path = `http://${ip}:5000/stop/${name}`;
+         const path = `http://${ip}:5002/stop/${name}`;
          axios
            .post(path)
            .then(() => {

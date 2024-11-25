@@ -1,0 +1,208 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Container API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "/container/create": {
+            "post": {
+                "tags": [
+                    "Container Management"
+                ],
+                "description": "Creates a new Docker container with the specified parameters.",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "The name of the Docker container to be created."
+                                },
+                                "image": {
+                                    "type": "string",
+                                    "description": "The Docker image to use for the container."
+                                },
+                                "vm_port": {
+                                    "type": "integer",
+                                    "description": "The port to bind the container to on the VM."
+                                }
+                            },
+                            "required": [
+                                "name",
+                                "image",
+                                "vm_port"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created: Container successfully created."
+                    },
+                    "400": {
+                        "description": "Bad Request: Missing or invalid input data."
+                    },
+                    "500": {
+                        "description": "Internal Server Error: Docker API or server error."
+                    }
+                }
+            }
+        },
+        "/container/delete/{container_name}": {
+            "delete": {
+                "tags": [
+                    "Container Management"
+                ],
+                "description": "Deletes a Docker container by its name.",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "container_name",
+                        "required": true,
+                        "type": "string",
+                        "description": "The name of the Docker container to delete."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK: Container successfully deleted."
+                    },
+                    "404": {
+                        "description": "Not Found: Container not found."
+                    },
+                    "400": {
+                        "description": "Bad Request: Container does not exist."
+                    },
+                    "500": {
+                        "description": "Internal Server Error: Unable to delete container."
+                    }
+                }
+            }
+        },
+        "/container/list": {
+            "get": {
+                "tags": [
+                    "Container"
+                ],
+                "description": "Retrieves a list of all Docker containers and their details.",
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK: Successful operation. Returns a list of containers.",
+                        "examples": {
+                            "application/json": {
+                                "container1": {
+                                    "name": "example_container",
+                                    "image": "example_image",
+                                    "vm_port": 2222,
+                                    "status": "running"
+                                },
+                                "container2": {
+                                    "name": "another_container",
+                                    "image": "another_image",
+                                    "vm_port": 3333,
+                                    "status": "stopped"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found: Container file not found."
+                    },
+                    "500": {
+                        "description": "Internal Server Error: An error occurred while fetching the container list."
+                    }
+                }
+            }
+        },
+        "/container/start/{container_name}": {
+            "post": {
+                "tags": [
+                    "Container Operations"
+                ],
+                "description": "Starts a Docker container by its name.",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "container_name",
+                        "required": true,
+                        "type": "string",
+                        "description": "The name of the Docker container to start."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK: Container started successfully."
+                    },
+                    "404": {
+                        "description": "Not Found: Container not found."
+                    },
+                    "500": {
+                        "description": "Internal Server Error: Unable to start the container."
+                    }
+                }
+            }
+        },
+        "/container/stop/{container_name}": {
+            "post": {
+                "tags": [
+                    "Container Operations"
+                ],
+                "description": "Stops a running Docker container by its name.",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "container_name",
+                        "required": true,
+                        "type": "string",
+                        "description": "The name of the Docker container to stop."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK: Container stopped successfully."
+                    },
+                    "404": {
+                        "description": "Not Found: Container not found."
+                    },
+                    "500": {
+                        "description": "Internal Server Error: Unable to stop the container."
+                    }
+                }
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Container",
+            "description": ""
+        },
+        {
+            "name": "Container Management",
+            "description": "Container lifecycle management"
+        },
+        {
+            "name": "Container Operations",
+            "description": "Container status management"
+        }
+    ]
+}

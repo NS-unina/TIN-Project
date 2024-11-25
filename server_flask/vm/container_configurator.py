@@ -15,7 +15,7 @@ except json.JSONDecodeError as e:
     print ({'error': f"{e}"}), 400
 
 
-@app.route('/create', methods=['POST'])
+@app.route('/container/create', methods=['POST'])
 def create_container():
     data = request.json
     name = data.get('name')
@@ -52,7 +52,7 @@ def create_container():
         
         
 
-@app.route('/delete/<container_name>', methods=['DELETE'])
+@app.route('/container/delete/<container_name>', methods=['DELETE'])
 def delete_container(container_name):
 
     try:
@@ -75,7 +75,7 @@ def delete_container(container_name):
     
 
          
-@app.route('/read', methods=['GET'])
+@app.route('/container/list', methods=['GET'])
 def read_container():
     try:
         containerList= get_all_container_dictionary() 
@@ -86,7 +86,7 @@ def read_container():
 
 
 
-@app.route('/start/<container_name>', methods=['POST'])
+@app.route('/container/start/<container_name>', methods=['POST'])
 def start_container(container_name):
 
     #Check if container exists
@@ -103,7 +103,7 @@ def start_container(container_name):
 
     
 
-@app.route('/stop/<container_name>', methods=['POST'])
+@app.route('/container/stop/<container_name>', methods=['POST'])
 def stop_container(container_name):
     
     try: 

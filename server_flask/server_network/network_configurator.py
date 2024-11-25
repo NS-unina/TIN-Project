@@ -45,8 +45,7 @@ def create_int(vm_id):
             if ("state DOWN" in state):
                 subprocess.run(["sudo", "ip", "link", "set", veth_name, "up"], check=True)
                 subprocess.run(["sudo", "ip", "link", "set", f"{veth_name}-peer", "up"], check=True)
-                return jsonify({'status': 'Interface already exists and it was turned on.', 'interface': f'{veth_name}-peer'}), 200
-            return jsonify({'status': 'Interface already exists and it is already up.', 'interface': f'{veth_name}-peer'}), 200
+            return jsonify({'status': 'Interface already exists and it is up.', 'interface': f'{veth_name}-peer'}), 200
         
         subprocess.run(["sudo", "ip", "link", "add", veth_name, "type", "veth", "peer", "name", f"{veth_name}-peer"], check=True)
         

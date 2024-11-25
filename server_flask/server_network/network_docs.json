@@ -1,0 +1,102 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Network API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "/network/create_int/{vm_id}": {
+            "post": {
+                "tags": [
+                    "Network"
+                ],
+                "description": "Creates a virtual network interface for a specified VM and attaches it to an Open vSwitch bridge (if it does not exists it creates it).",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "vm_id",
+                        "required": true,
+                        "type": "string",
+                        "description": "The unique identifier of the virtual machine for which the network interface is created."
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Network interface successfully created and configured.",
+                        "examples": {
+                            "application/json": {
+                                "status": "Network configured",
+                                "interface": "veth-1234-peer"
+                            }
+                        }
+                    },
+                    "200": {
+                        "description": "Network interface already exists and is turned up."
+                    },
+                    "500": {
+                        "description": "Internal Server Error: Error during network interface creation or configuration."
+                    }
+                }
+            }
+        },
+        "/network/delete_int/{vm_id}": {
+            "delete": {
+                "tags": [
+                    "Network"
+                ],
+                "description": "Deletes a virtual network interface associated with a specified VM and removes it from the Open vSwitch bridge.",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "vm_id",
+                        "required": true,
+                        "type": "string",
+                        "description": "The unique identifier of the virtual machine whose network interface is being deleted."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Network interface successfully deleted.",
+                        "examples": {
+                            "application/json": {
+                                "status": "Network interface deleted",
+                                "interface deleted": "veth-1234-peer"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error: Error during network interface deletion or OVS not found."
+                    }
+                }
+            }
+        },
+        "/network/ping": {
+            "get": {
+                "tags": [
+                    "Network"
+                ],
+                "description": "Returns a simple message indicating that the server is running.",
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation: Server is running."
+                    }
+                }
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Network",
+            "description": ""
+        }
+    ]
+}

@@ -6,6 +6,7 @@ import random
 import string
 import json
 import requests
+import vagrant
 
 #Directory for vms
 VM_PATH = '../vm'
@@ -43,6 +44,81 @@ def create_vagrantfile(vagrantfile_path,name,box,cpus,ram,ip,tap):
         vagrant_file.write(vagrantfile_content)
     return
 
+#Define vm's id
+def generate_unique_id(length=5):
+    
+    try:
+        with open(os.path.join(VM_PATH, 'VM_list.json'), 'r') as vm_list:
+            vm_dictionary = json.load(vm_list)
+    except FileNotFoundError:
+        raise VM_listFileNotFound ("VM_list doesn't exists.", error_code=404)
+
+    while True:
+
+        vm_id = ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+
+        if vm_id not in vm_dictionary:
+            return vm_id
+
+
+# ********[FUNCTION FOR VM STATUS]********
+
+# Restore vm based on last status
+def restore_vm_status ():
+    try:
+        with open(os.path.join(VM_PATH, 'VM_list.json'), 'r') as vm_list:
+            vm_dictionary = json.load(vm_list)
+    except FileNotFoundError as e:
+        raise VM_listFileNotFound ("VM_list doesn't exists.", error_code=404)
+
+    for vm_name in vm_dictionary:
+        status = vm_dictionary[vm_name]["status"]
+
+        #Check if vm folder exists
+        vm_path = os.path.join(VM_PATH, vm_name)
+        if not os.path.exists(vm_path):
+            raise VmNotFound (f"VM '{vm_name}' not found.", error_code=404)
+        
+        #Check if vagrantfile exist
+        vagrantfile_path = os.path.join(VM_PATH, vm_name, "Vagrantfile")
+        if not os.path.exists(vagrantfile_path):
+            raise VagrantfileNotFound ("Vagrantfile not found.", error_code=404)
+
+        v = vagrant.Vagrant(vm_path)
+        if status == "running":
+            v.up()
+            print (f"VM {vm_name} restored to running.")
+        elif status == "poweroff":
+            v.halt()
+            print (f"VM {vm_name} restored to poweroff.")
+
+
+
+# Periodic function to update vm
+def sync_vm():
+    try:
+        for vm_name in os.listdir(VM_PATH):
+            vm_path = os.path.join(VM_PATH, vm_name)
+            if os.path.isdir(vm_path):
+                if (not os.path.exists(os.path.join(vm_path,"Vagrantfile"))):
+                    continue                   
+                v = vagrant.Vagrant(vm_path)
+                status = v.status()
+                update_item_vm_list(vm_name, "status", status[0].state)
+                print ("ok")
+
+    except VagrantfileNotFound as e:
+        print ({"error": f"{e.message}"})
+    except VM_listFileNotFound as e:
+        print ({"error": f"{e.message}"})
+    except FieldNotValid as e:
+        print ({'error': f"{e.message}"})
+    except Exception as e:
+        print ({"error": f"Error {e}"})
+
+
+
+# ********[UPDATE FIELD IN VAGRANTFILE]********
 
 #Update CPU
 def update_cpu(cpu, vm_name):
@@ -111,23 +187,6 @@ def update_ip(ip, vm_name):
     # Write the updated contents back to the Vagrantfile
     with open(vagrantfile_path, "w") as vagrantfile:
         vagrantfile.writelines(vagrantfile_content)
-
-
-#Define vm's id
-def generate_unique_id(length=5):
-    
-    try:
-        with open(os.path.join(VM_PATH, 'VM_list.json'), 'r') as vm_list:
-            vm_dictionary = json.load(vm_list)
-    except FileNotFoundError:
-        raise VM_listFileNotFound ("VM_list doesn't exists.", error_code=404)
-
-    while True:
-
-        vm_id = ''.join(random.choices(string.ascii_letters + string.digits, k=length))
-
-        if vm_id not in vm_dictionary:
-            return vm_id
 
 
 
@@ -232,4 +291,5 @@ def delete_from_dictionary(vm_name):
     
         with open(os.path.join(VM_PATH, 'VM_list.json'), 'w') as vm_list:
             vm_list.write(json.dumps(vm_dictionary, indent=4))
+
 

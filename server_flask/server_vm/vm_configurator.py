@@ -15,13 +15,16 @@ from apscheduler.triggers.interval import IntervalTrigger
 app = Flask (__name__)
 app.config.from_object(__name__)
 
-
 CORS(app,resources={r'/*':{'origins':'*'}})
 
+# Configuration of BackgroundScheduler
+scheduler = BackgroundScheduler()
+scheduler.start()
+scheduler.add_job(sync_vm, trigger=IntervalTrigger(seconds=10))
 
-#check that network configurator server is running
+
+# Check that network configurator server is running
 while (True):
-
     try:
         url= f"{NET_SERVER}/network/ping"
         response=requests.get(url)
@@ -39,35 +42,18 @@ while (True):
     sleep(5)
     
 
+# Restore vm's last state
+try:
+    restore_vm_status()
+except VM_listFileNotFound as e:
+    print (e.message, e.error_code)
+except VmNotFound as e:
+    print (e.message, e.error_code)
+except VagrantfileNotFound as e:
+    print (e.message, e.error_code)
+except Exception as e:
+    print (f"Error {e}")
 
-# Periodic function to update vm
-def sync_vm():
-    try:
-        for vm_name in os.listdir(VM_PATH):
-            vm_path = os.path.join(VM_PATH, vm_name)
-            if os.path.isdir(vm_path):
-                if (not os.path.exists(os.path.join(vm_path,"Vagrantfile"))):
-                    continue                   
-                v = vagrant.Vagrant(vm_path)
-                status = v.status()
-                update_item_vm_list(vm_name, "status", status[0].state)
-                print ("ok")
-
-    except VagrantfileNotFound as e:
-        print ({"error": f"{e.message}"})
-    except VM_listFileNotFound as e:
-        return ({"error": f"{e.message}"})
-    except FieldNotValid as e:
-        return ({'error': f"{e.message}"})
-    except Exception as e:
-        return ({"error": f"Error {e}"})
-
-
-
-# Configuration of BackgroundScheduler
-scheduler = BackgroundScheduler()
-scheduler.start()
-scheduler.add_job(sync_vm, trigger=IntervalTrigger(seconds=10))
 
 
 

@@ -60,7 +60,8 @@ npm run dev
 
 ## Architecture
 
-![alt text](https://drive.google.com/file/d/1T1qC3pu3jHglu8pmOA5lHDz3L3FJXFDx/view?usp=sharing)
+![architecture](https://github.com/user-attachments/assets/83c9e3fd-7039-4325-973b-8cbe2c8d7749)
+
 
 ## Authors
 

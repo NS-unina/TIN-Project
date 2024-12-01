@@ -105,7 +105,7 @@ swagger_ui_blueprint = get_swaggerui_blueprint(
     SWAGGER_URL,
     f'/{API_DOCS_PATH}',
     config={
-        'app_name': "VM API Documentation"
+        'app_name': "Network API Documentation"
     }
 )
 app.register_blueprint(swagger_ui_blueprint, url_prefix=SWAGGER_URL)

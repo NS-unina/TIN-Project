@@ -1,11 +1,11 @@
 from function import *
 from exception import *
+from config import DevelopmentConfig
 from flask import jsonify, send_from_directory
 from flask_cors import CORS
 from time import sleep
 import vagrant
 import shutil
-from config import DevelopmentConfig
 
 from flask_swagger_ui import get_swaggerui_blueprint
 
@@ -14,7 +14,6 @@ from apscheduler.triggers.interval import IntervalTrigger
 
 
 app = Flask (__name__)
-# app.config.from_object(__name__)
 app.config.from_object(DevelopmentConfig)  # Load the configuration
 
 #Directory for vms
@@ -262,7 +261,6 @@ def power_stop_vm(vm_name):
         return jsonify({"error": f"Error starting  vm. {e}"}), 500
 
 
-
 @app.route('/vm/reload/<vm_name>', methods=['POST'])
 def power_vm(vm_name):
 
@@ -285,6 +283,21 @@ def power_vm(vm_name):
         return jsonify ({'error': f"{e.message}"}), e.error_code
     except Exception as e:
         return jsonify({"error": f"Error starting  vm. {e}"}), 500
+
+
+#[TODO]
+@app.route('/vm/list_honeypot_services', methods=['GET'])
+def list_honeypot_service():
+    
+    #[TODO] implementare lista servizi
+    
+    services= {"21":"ssh", "23":"telnet"}
+    return jsonify(services), 200
+
+
+@app.route('/vm/ping', methods=['GET'])
+def ping():
+    return jsonify("server running"), 200
 
 
 #Swagger docs api

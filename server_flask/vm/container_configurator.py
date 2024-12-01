@@ -116,7 +116,13 @@ def stop_container(container_name):
         return jsonify ({'error': f"{e.message}"}), e.error_code
     except docker.errors.NotFound:
         return jsonify({'Container not found': f'{container_name}'}), 404
-        
+    
+
+@app.route('/container/ping', methods=['GET'])
+def ping():
+    return jsonify("server running"), 200
+
+
     
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5002)

@@ -93,7 +93,7 @@ def delete_from_dictionary(container_name):
         container_list.write(json.dumps(containerList, indent=4))
 
 
-def get_all_container_dictionary ():
+def get_all_container():
     try:
         with open('Containers.json', 'r') as container_list:
             containerList = json.load(container_list)

@@ -78,7 +78,7 @@ def delete_container(container_name):
 @app.route('/container/list', methods=['GET'])
 def read_container():
     try:
-        containerList= get_all_container_dictionary() 
+        containerList= get_all_container() 
         return jsonify(containerList), 200
     
     except ContainerFileNotFound as e:
@@ -122,6 +122,11 @@ def stop_container(container_name):
 def ping():
     return jsonify("server running"), 200
 
+
+@app.route('/container/count', methods=['GET'])
+def container_number():
+    containerList = get_all_container()
+    return jsonify({sum(len(containers) for containers in containerList.values())}), 200
 
     
 if __name__ == '__main__':

@@ -29,7 +29,7 @@ CORS(app,resources={r'/*':{'origins':'*'}})
 # Configuration of BackgroundScheduler
 scheduler = BackgroundScheduler()
 scheduler.start()
-scheduler.add_job(sync_vm, trigger=IntervalTrigger(seconds=10))
+scheduler.add_job(lambda: sync_vm(VM_PATH), trigger=IntervalTrigger(seconds=10))
 
 
 # Check that network configurator server is running
@@ -41,7 +41,7 @@ while (True):
             print("Network Configurator Running, initializing network interfaces\n")
 
             #Request init list of vm and creations of interfaces
-            vm_id_dictionary = init_int(NET_SERVER)
+            vm_id_dictionary = init_int(NET_SERVER,VM_PATH)
             print (vm_id_dictionary)
             break     
     except requests.exceptions.ConnectionError as e:
@@ -53,7 +53,7 @@ while (True):
 
 # Restore vm's last state
 try:
-    restore_vm_status()
+    restore_vm_status(VM_PATH)
 except VM_listFileNotFound as e:
     print (e.message, e.error_code)
 except VmNotFound as e:
@@ -88,7 +88,7 @@ def create_vm():
         os.makedirs(vm_path)
 
         #Generate vm_id
-        vm_id = generate_unique_id()
+        vm_id = generate_unique_id(VM_PATH)
 
         #Create network interfaces for the VM
         url= f"{NET_SERVER}/network/create_int/{vm_id}"
@@ -102,13 +102,13 @@ def create_vm():
         
         #Creating vagrantfile and save information in vm dictionary
         create_vagrantfile(vm_path, vm_name,vm_box, vm_cpus, vm_ram, vm_ip, vm_interface)
-        create_item_vm_list(vm_name, vm_id, vm_ram, vm_cpus, vm_ip)
+        create_item_vm_list(vm_name, vm_id, vm_ram, vm_cpus, vm_ip,VM_PATH)
 
         #Starting the vm
         v = vagrant.Vagrant(vm_path)
         #v.up()
         status = v.status()
-        update_item_vm_list(vm_name, "status", status[0].state)        
+        update_item_vm_list(vm_name, "status", status[0].state,VM_PATH)        
         return jsonify({"message": f"VM '{vm_name}' successfully created!"}), 201
 
     except FileExistsError:
@@ -130,14 +130,14 @@ def delete_vm(vm_name):
             return jsonify({"error": f"VM '{vm_name}' doesn't exist"}), 404
 
         #Find associated interface
-        vm_id = search_item_vm_list(vm_name, "id")
+        vm_id = search_item_vm_list(vm_name, "id",VM_PATH)
 
         #Delete network interfaces for the VM
         url= f"{NET_SERVER}/network/delete_int/{vm_id}"
         response=requests.delete(url)
         if (response.status_code == 200):
             print("Interface deleted successfully!")
-            delete_from_dictionary(vm_name)
+            delete_from_dictionary(vm_name,VM_PATH)
         else:
             return jsonify({"error": f"Request failed with status code: {response.status_code}"})
 
@@ -189,19 +189,19 @@ def update_vm(vm_name):
             return jsonify({"error": f"VM '{vm_name}' doesn't exist"}), 404
 
         if (vm_cpus):
-            update_cpu(vm_cpus, vm_name)
-            update_item_vm_list(vm_name, "cpu", vm_cpus)
+            update_cpu(vm_cpus, vm_name,VM_PATH)
+            update_item_vm_list(vm_name, "cpu", vm_cpus,VM_PATH)
         if (vm_ram):
-            update_ram(vm_ram, vm_name)  
-            update_item_vm_list(vm_name, "ram", vm_ram)
+            update_ram(vm_ram, vm_name,VM_PATH)  
+            update_item_vm_list(vm_name, "ram", vm_ram,VM_PATH)
         if (vm_ip):
-            update_ip(vm_ip, vm_name)
-            update_item_vm_list(vm_name, "ip", vm_ip)
+            update_ip(vm_ip, vm_name,VM_PATH)
+            update_item_vm_list(vm_name, "ip", vm_ip,VM_PATH)
 
         v = vagrant.Vagrant(vm_path)
         #v.reload()
         status = v.status()
-        update_item_vm_list(vm_name, "status", status[0].state)
+        update_item_vm_list(vm_name, "status", status[0].state,VM_PATH)
         return jsonify({"message": f"VM '{vm_name}' sucessfully updated!.", "CPU": f"{vm_cpus}", "RAM": f"{vm_ram}", "IP": f"{vm_ip}"}), 200
 
     except VagrantfileNotFound as e:
@@ -227,7 +227,7 @@ def power_start_vm(vm_name):
         v = vagrant.Vagrant(vm_path)
         v.up()
         status = v.status()
-        update_item_vm_list(vm_name, "status", status[0].state)
+        update_item_vm_list(vm_name, "status", status[0].state,VM_PATH)
         return jsonify({"message": f"VM '{vm_name}' successfully started!"}), 200
     
     except VM_listFileNotFound as e:
@@ -251,7 +251,7 @@ def power_stop_vm(vm_name):
         v = vagrant.Vagrant(vm_path)
         v.halt()
         status = v.status()
-        update_item_vm_list(vm_name, "status", status[0].state)
+        update_item_vm_list(vm_name, "status", status[0].state,VM_PATH)
         return jsonify({"message": f"VM '{vm_name}' successfully stopped!"}), 200
     
     except VM_listFileNotFound as e:
@@ -276,7 +276,7 @@ def power_vm(vm_name):
         v = vagrant.Vagrant(vm_path)
         v.reload()
         status = v.status()
-        update_item_vm_list(vm_name, "status", status[0].state)
+        update_item_vm_list(vm_name, "status", status[0].state,VM_PATH)
         return jsonify({"message": f"VM '{vm_name}' successfully reloaded!"}), 201
     
     except VM_listFileNotFound as e:

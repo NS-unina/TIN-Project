@@ -10,10 +10,10 @@ import vagrant
 
 
 #Directory for vms
-# VM_PATH = '../vm'
+#VM_PATH = '../vm'
 
 #Server Address for network configuration (da fare nel file di config)
-# NET_SERVER="http://127.0.0.1:5001"
+#NET_SERVER="http://127.0.0.1:5001"
 
 #Vagrantfile creation
 def create_vagrantfile(vagrantfile_path,name,box,cpus,ram,ip,tap):
@@ -46,7 +46,7 @@ def create_vagrantfile(vagrantfile_path,name,box,cpus,ram,ip,tap):
     return
 
 #Define vm's id
-def generate_unique_id(length=5):
+def generate_unique_id(VM_PATH,length=5):
     
     try:
         with open(os.path.join(VM_PATH, 'VM_list.json'), 'r') as vm_list:
@@ -65,7 +65,7 @@ def generate_unique_id(length=5):
 # ********[FUNCTION FOR VM STATUS]********
 
 # Restore vm based on last status
-def restore_vm_status ():
+def restore_vm_status (VM_PATH):
     try:
         with open(os.path.join(VM_PATH, 'VM_list.json'), 'r') as vm_list:
             vm_dictionary = json.load(vm_list)
@@ -96,7 +96,7 @@ def restore_vm_status ():
 
 
 # Periodic function to update vm
-def sync_vm():
+def sync_vm(VM_PATH):
     try:
         for vm_name in os.listdir(VM_PATH):
             vm_path = os.path.join(VM_PATH, vm_name)
@@ -105,7 +105,7 @@ def sync_vm():
                     continue                   
                 v = vagrant.Vagrant(vm_path)
                 status = v.status()
-                update_item_vm_list(vm_name, "status", status[0].state)
+                update_item_vm_list(vm_name, "status", status[0].state,VM_PATH)
                 print ("ok")
 
     except VagrantfileNotFound as e:
@@ -122,7 +122,7 @@ def sync_vm():
 # ********[UPDATE FIELD IN VAGRANTFILE]********
 
 #Update CPU
-def update_cpu(cpu, vm_name):
+def update_cpu(cpu, vm_name,VM_PATH):
     
     try:
         # Read the contents of the Vagrantfile
@@ -145,7 +145,7 @@ def update_cpu(cpu, vm_name):
 
 
 #Update RAM
-def update_ram(ram, vm_name):
+def update_ram(ram, vm_name,VM_PATH):
     
     try:
         # Read the contents of the Vagrantfile
@@ -168,7 +168,7 @@ def update_ram(ram, vm_name):
 
 
 #Update IP
-def update_ip(ip, vm_name):
+def update_ip(ip, vm_name,VM_PATH):
     
     try:
         # Read the contents of the Vagrantfile
@@ -194,7 +194,7 @@ def update_ip(ip, vm_name):
 # ********[DICTIONARY LIST VM]********
 
 #Init dictionary
-def init_int(NET_SERVER):
+def init_int(NET_SERVER,VM_PATH):
     vm_dictionary = {}
     
     #Read from id_list already existing interfaces
@@ -220,7 +220,7 @@ def init_int(NET_SERVER):
 
 
 # Create item in vm dictionary
-def create_item_vm_list(vm_name, id, ram, cpu, ip):
+def create_item_vm_list(vm_name, id, ram, cpu, ip,VM_PATH):
 
     try:
         with open(os.path.join(VM_PATH, 'VM_list.json'), 'r') as vm_list:
@@ -241,7 +241,7 @@ def create_item_vm_list(vm_name, id, ram, cpu, ip):
     
 
 # Update item in vm dictionary
-def update_item_vm_list(vm_name, field, value_field):
+def update_item_vm_list(vm_name, field, value_field,VM_PATH):
 
     try:
         with open(os.path.join(VM_PATH, 'VM_list.json'), 'r') as vm_list:
@@ -262,7 +262,7 @@ def update_item_vm_list(vm_name, field, value_field):
 
 
 #Search value of a field in dictionary
-def search_item_vm_list(vm_name, field):
+def search_item_vm_list(vm_name, field,VM_PATH):
 
     try:
         with open(os.path.join(VM_PATH, 'VM_list.json'), 'r') as vm_list:
@@ -279,7 +279,7 @@ def search_item_vm_list(vm_name, field):
         raise FieldNotValid (f"VM '{vm_name}' doesn't exists.", error_code=400)
 
 #Delete from dictionary
-def delete_from_dictionary(vm_name):
+def delete_from_dictionary(vm_name,VM_PATH):
     
     try:
         with open(os.path.join(VM_PATH, 'VM_list.json'), 'r') as vm_list:

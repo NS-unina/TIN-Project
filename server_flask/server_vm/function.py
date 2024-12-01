@@ -8,11 +8,12 @@ import json
 import requests
 import vagrant
 
+
 #Directory for vms
-VM_PATH = '../vm'
+# VM_PATH = '../vm'
 
 #Server Address for network configuration (da fare nel file di config)
-NET_SERVER="http://127.0.0.1:5001"
+# NET_SERVER="http://127.0.0.1:5001"
 
 #Vagrantfile creation
 def create_vagrantfile(vagrantfile_path,name,box,cpus,ram,ip,tap):
@@ -193,7 +194,7 @@ def update_ip(ip, vm_name):
 # ********[DICTIONARY LIST VM]********
 
 #Init dictionary
-def init_int():
+def init_int(NET_SERVER):
     vm_dictionary = {}
     
     #Read from id_list already existing interfaces

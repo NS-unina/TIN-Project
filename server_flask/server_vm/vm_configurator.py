@@ -5,6 +5,7 @@ from flask_cors import CORS
 from time import sleep
 import vagrant
 import shutil
+from config import DevelopmentConfig
 
 from flask_swagger_ui import get_swaggerui_blueprint
 
@@ -13,7 +14,15 @@ from apscheduler.triggers.interval import IntervalTrigger
 
 
 app = Flask (__name__)
-app.config.from_object(__name__)
+# app.config.from_object(__name__)
+app.config.from_object(DevelopmentConfig)  # Load the configuration
+
+#Directory for vms
+VM_PATH = app.config['VM_PATH']
+
+#Server Address for network configuration 
+NET_SERVER=app.config['NET_SERVER']
+
 
 CORS(app,resources={r'/*':{'origins':'*'}})
 
@@ -32,7 +41,7 @@ while (True):
             print("Network Configurator Running, initializing network interfaces\n")
 
             #Request init list of vm and creations of interfaces
-            vm_id_dictionary = init_int()
+            vm_id_dictionary = init_int(NET_SERVER)
             print (vm_id_dictionary)
             break     
     except requests.exceptions.ConnectionError as e:
@@ -300,7 +309,7 @@ def serve_swagger_file():
 
 if __name__ == '__main__':
     os.makedirs(VM_PATH, exist_ok=True)
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host=app.config['IP_ADDRESS'], port=app.config['PORT'])
 
     try:
         app.run(debug=True, use_reloader=False)  # use_reloader=False evita conflitti con APScheduler

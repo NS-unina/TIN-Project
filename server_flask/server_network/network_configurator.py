@@ -2,14 +2,17 @@ from flask import Flask, jsonify, send_from_directory
 from flask_swagger_ui import get_swaggerui_blueprint
 import subprocess
 import os
+from config import DevelopmentConfig
 
 
 app = Flask(__name__)
-app.config.from_object(__name__)
+#app.config.from_object(__name__)
+app.config.from_object(DevelopmentConfig)  # Load the configuration
 
-ip_host = "10.1.3.1/24"
-ip_onos = "127.0.0.1"
-ovs_bridge = "br0"
+
+ip_host = app.config['IP_HOST']
+ip_onos = app.config['IP_ONOS']
+ovs_bridge = app.config['OVS_BRIDGE']
 
 @app.route('/network/create_int/<vm_id>', methods=['POST'])
 def create_int(vm_id):
@@ -114,6 +117,6 @@ def serve_swagger_file():
 
 
 if __name__ == '__main__':
-    app.run(port=5001)
+    app.run(host=app.config['IP_ADDRESS'], port=app.config['PORT'])
     
 

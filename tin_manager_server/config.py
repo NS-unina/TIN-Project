@@ -8,6 +8,7 @@ class Config:
     VM_SERVER="http://127.0.0.1:5000" #ip Address for vm configurator server
     PORT_CONTAINER_SERVER="5002" #port for container configurator server
 
+    MAX_CONTAINERS=5
 
 class ProductionConfig(Config):
     DEBUG = False

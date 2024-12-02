@@ -16,6 +16,7 @@ VM_SERVER=app.config['VM_SERVER']
 #Port for container configuration
 PORT_CONTAINER_SERVER=app.config['PORT_CONTAINER_SERVER']
 
+MAX_CONTAINERS=app.config['MAX_CONTAINERS']
 
 # Init
 try:
@@ -28,7 +29,39 @@ try:
     print (vms_list)
 
     #Obtain honeyfarm list
-    HoneyfarmList = get_honeyfarm_list()
+    
+    HoneyfarmList = {
+    "ssh": [
+      {
+        "container_name": "corwrie",
+        "ip": "10.10.10.11",
+        "port": "4442",
+        "rtt": "10ms",
+        "status": "running",
+        "busy":"True"
+      },
+      {
+        "container_name": "corwrie",
+        "ip": "10.10.10.10",
+        "port": "4444",
+        "rtt": "10ms",
+        "status": "exited",
+        "busy":"True"
+
+      },
+      {
+        "container_name": "corwrie",
+        "ip": "10.10.10.10",
+        "port": "4445",
+        "rtt": "10ms",
+        "status": "running",
+        "busy":"False"
+
+      }
+    ],
+    "telnet": []
+  }
+    
 
 except ServiceListError as e:
     print (e.message)
@@ -67,34 +100,39 @@ def add_flow():
     ovs_id=data.get('ovs_id')
 
     #check fields
-    if not src_ip:
-        return jsonify({"error": "src_ip field is needed"}), 400
-    if not dst_ip:
-        return jsonify({"error": "dst_ip field is needed"}), 400
-    if not port:
-        return jsonify({"error": "port field is needed"}), 400
-    if not ovs_id:
-        return jsonify({"error": "ovs_id field is needed"}), 400
-
-
+    # if not src_ip:
+    #     return jsonify({"error": "src_ip field is needed"}), 400
+    # if not dst_ip:
+    #     return jsonify({"error": "dst_ip field is needed"}), 400
+    # if not port:
+    #     return jsonify({"error": "port field is needed"}), 400
+    # if not ovs_id:
+    #     return jsonify({"error": "ovs_id field is needed"}), 400
+    
     
     service = services_list.get(port)
+    
     if (service == None): 
         #ritorna errore servizio non supportato ? o magari buttiamo su una honeypot di default?
         service="default"
+    print ("service",service)
+    #print(HoneyfarmList[service])
 
-    for service in HoneyfarmList["honeyfarm"]:
-        for container in service.get("ssh",[]):
-            print(container)
-            if (not container):
-                #chiama create container
-                #create_container()
-                print("creating container")
-            else:
-                print("checking container status")
-                
+    #questa da mettere in functions
+    honeypot=get_available_container(service,HoneyfarmList)
+    if(not honeypot):
+        print("creating container")
 
+        get_available_vm(vms_list,MAX_CONTAINERS)
+        #honeypot=create_container()
+    
+    #print ("chosen honeypot: ",honeypot["ip"],honeypot["port"])
 
+    #create_flow(....,honeypot["ip"],"honeypot["port"]")
+
+    
+
+    return jsonify({"message":  "flow successfully created!"}), 201
 
 
 

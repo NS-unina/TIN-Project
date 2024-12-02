@@ -38,6 +38,26 @@ except VmListError as e:
 
 
 
+
+#WEBHOOKS for vm and container updates (?) VS POLLING
+
+@app.route('/tinmanager/vmwebhook', methods=['POST'])
+def vm_webhook():
+    data = request.json
+    
+
+
+@app.route('/tinmanager/containerwebhook', methods=['POST'])
+def container_webhook():
+    data = request.json
+    
+
+
+
+
+
+
+
 @app.route('/tinmanager/addflow', methods=['POST'])
 def add_flow():
     data = request.json
@@ -45,6 +65,46 @@ def add_flow():
     dst_ip = data.get('dst_ip')
     port = data.get('port')
     ovs_id=data.get('ovs_id')
+
+    #check fields
+    if not src_ip:
+        return jsonify({"error": "src_ip field is needed"}), 400
+    if not dst_ip:
+        return jsonify({"error": "dst_ip field is needed"}), 400
+    if not port:
+        return jsonify({"error": "port field is needed"}), 400
+    if not ovs_id:
+        return jsonify({"error": "ovs_id field is needed"}), 400
+
+
+    
+    service = services_list.get(port)
+    if (service == None): 
+        #ritorna errore servizio non supportato ? o magari buttiamo su una honeypot di default?
+        service="default"
+
+    for service in HoneyfarmList["honeyfarm"]:
+        for container in service.get("ssh",[]):
+            print(container)
+            if (not container):
+                #chiama create container
+                #create_container()
+                print("creating container")
+            else:
+                print("checking container status")
+                
+
+
+
+
+
+    
+     
+    
+
+
+
+
 
     #cerca associazione porta -> servizio nella lista services
     #leggi items in lista containers corrispondente al servizio
@@ -62,6 +122,32 @@ def add_flow():
 
     #faccio flow
 
+# {
+    #   "honeyfarm": [
+    #     {
+    #       "ssh": [
+    #         {
+    #           "container_name": "corwrie",
+    #           "ip": "10.10.10.10",
+    #           "port": "4444",
+    #           "rtt": "10ms",
+    #           "status":"running"
+    #           "busy":True
+    #         },
+    #         {
+    #           "container_name": "corwrie",
+    #           "ip": "10.10.10.11",
+    #           "port": "4444",
+    #           "rtt": "10ms",
+    #           "status": "occupied"
+    #         }
+    #       ]
+    #     },
+    #     {
+    #       "telnet": []
+    #     }
+    #   ]
+    # }
 
 
 

@@ -9,7 +9,7 @@ import json
 def get_services_list(VM_SERVER):
 
     if server_running(VM_SERVER, "vm"):
-        url= f"{VM_SERVER}/vm/list_honeypot_services"
+        url= f"{VM_SERVER}/vm/services"
         response=requests.get(url)
         if (response.status_code == 200):
             services = response.json()
@@ -52,6 +52,7 @@ def get_vm_list (VM_SERVER, PORT_CONTAINER_SERVER):
                 "status": vm.get("status"),
                 "n_container": n_container
             }
+            ###### sicuro di usare append? si creano duplicati######
             vms_list["vms"].append(new_vm_entry)
         
     return vms_list

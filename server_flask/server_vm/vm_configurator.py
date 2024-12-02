@@ -286,8 +286,8 @@ def power_vm(vm_name):
 
 
 #[TODO]
-@app.route('/vm/list_honeypot_services', methods=['GET'])
-def list_honeypot_service():
+@app.route('/vm/services', methods=['GET'])
+def list_services():
     
     #[TODO] implementare lista servizi
     

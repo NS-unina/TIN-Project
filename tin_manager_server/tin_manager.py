@@ -11,7 +11,7 @@ app = Flask (__name__)
 app.config.from_object(DevelopmentConfig)  # Load the configuration
 
 #Server Address for vm configuration 
-VM_SERVER=app.config['VM_SERVER']
+VM_SERVER_URL=f"http://{app.config['VM_SERVER_IP']}:{app.config['VM_SERVER_PORT']}"
 
 #Port for container configuration
 PORT_CONTAINER_SERVER=app.config['PORT_CONTAINER_SERVER']
@@ -21,12 +21,13 @@ MAX_CONTAINERS=app.config['MAX_CONTAINERS']
 # Init
 try:
     #Obtain services list
-    services_list = get_services_list(VM_SERVER)
+    services_list = get_services_list(VM_SERVER_URL)
     print (services_list)
 
     #Obtain vm list
-    vms_list = get_vm_list(VM_SERVER, PORT_CONTAINER_SERVER)
-    print (vms_list)
+    # vms_list = get_vm_list(VM_SERVER, PORT_CONTAINER_SERVER)
+    # print (vms_list)
+    vms_list= {'vms': [{'name': 'my-vm', 'ip': '10.1.3.10', 'status': 'running', 'n_container': '3'}]}
 
     #Obtain honeyfarm list
     
@@ -55,19 +56,25 @@ try:
         "port": "4445",
         "rtt": "10ms",
         "status": "running",
-        "busy":"False"
+        "busy":"True"
 
       }
     ],
     "telnet": []
-  }
+    }
+    print (HoneyfarmList)
     
 
 except ServiceListError as e:
-    print (e.message)
+    print (f"Error: {e.message}")
 except VmListError as e:
-    print (e.message)
-
+    print (f"Error: {e.message}")
+except VMServerNotRunning as e:
+    print (f"Error: {e.message}")
+except ContainerServerNotRunning as e:
+    print (f"Error: {e.message}")
+except Exception as e:
+    print (f"Error: {e}")
 
 
 
@@ -109,54 +116,52 @@ def add_flow():
     # if not ovs_id:
     #     return jsonify({"error": "ovs_id field is needed"}), 400
     
-    
+
+    #Association service -> port
     service = services_list.get(port)
-    
     if (service == None): 
-        #ritorna errore servizio non supportato ? o magari buttiamo su una honeypot di default?
         service="default"
-    print ("service",service)
-    #print(HoneyfarmList[service])
+    print ("service: ",service)
 
-    #questa da mettere in functions
-    honeypot=get_available_container(service,HoneyfarmList)
-    if(not honeypot):
-        print("creating container")
+    try:
 
-        get_available_vm(vms_list,MAX_CONTAINERS)
-        #honeypot=create_container()
+        honeypot=get_available_container(service,HoneyfarmList)
+        
+        if (not honeypot):
+            honeyfarm=get_available_vm(vms_list,MAX_CONTAINERS)
+
+            if (not honeyfarm):
+                honeyfarm=create_vm(VM_SERVER_URL)          
+                     
+            print("chosen vm:", honeyfarm)
+
+            honeypot=create_container(honeyfarm,vm_port,image)
+        
+        print ("chosen honeypot: ",honeypot["ip"],honeypot["port"])
+
+        #create_flow(....,honeypot["ip"],"honeypot["port"]")
+
+        return jsonify({"message":  "Flow successfully created!"}), 201
     
-    #print ("chosen honeypot: ",honeypot["ip"],honeypot["port"])
+    except Exception as e:
+        return jsonify({'error': f'Error {e}'}), 500
 
-    #create_flow(....,honeypot["ip"],"honeypot["port"]")
-
-    
-
-    return jsonify({"message":  "flow successfully created!"}), 201
+ 
 
 
-
-    
-     
-    
-
-
-
-
-
-    #cerca associazione porta -> servizio nella lista services
-    #leggi items in lista containers corrispondente al servizio
-        #se lista vuota -> vai a creazione
-        #se lista piena->controlla busy
-            #se tutti busy -> vai a creazione
-            #se qualcuno free -> controlla status
-                #se status sus -> risolvi o crea
-                #se running -> scegli container
+    #cerca associazione porta -> servizio nella lista services OK
+    #leggi items in lista containers corrispondente al servizi OK
+        #se lista vuota -> vai a creazione OK
+        #se lista piena->controlla busy OK
+            #se tutti busy -> vai a creazione OK
+            #se qualcuno free -> controlla status OK
+                #se status sus -> risolvi o crea OK
+                #se running -> scegli container OK
     
     #creazione:
     #cerca vm nella lista vm con occupied_slot < MAX
-        #se non c'è ->crea vm (richiesta a container_configurator)
-        #se c'è-> creo container su container_configurator con l'ip della vm
+        #se non c'è ->crea vm (richiesta a container_configurator) OK
+        #se c'è-> creo container su container_configurator con l'ip della vm OK
 
     #faccio flow
 

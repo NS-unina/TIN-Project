@@ -55,11 +55,21 @@ def generate_unique_id(VM_PATH,length=5):
         raise VM_listFileNotFound ("VM_list doesn't exists.", error_code=404)
 
     while True:
-
         vm_id = ''.join(random.choices(string.ascii_letters + string.digits, k=length))
-
         if vm_id not in vm_dictionary:
             return vm_id
+    
+
+def generate_default_ip(VM_PATH, network):
+    try:
+        with open(os.path.join(VM_PATH, 'VM_list.json'), 'r') as vm_list:
+            vm_dictionary = json.load(vm_list)
+    except FileNotFoundError:
+        raise VM_listFileNotFound ("VM_list doesn't exists.", error_code=404)
+    
+
+
+    return
 
 
 # ********[FUNCTION FOR VM STATUS]********

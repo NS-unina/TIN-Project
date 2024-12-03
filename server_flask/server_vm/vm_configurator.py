@@ -68,12 +68,21 @@ except Exception as e:
 
 @app.route('/vm/create', methods=['POST'])
 def create_vm():
+
+    #Generate vm_id
+    try:
+        vm_id = generate_unique_id(VM_PATH)
+        default_ip = generate_default_ip(VM_PATH, "10.1.3.0")
+    except VM_listFileNotFound as e:
+        return jsonify ({'error': f"VM_list doesn't exists."}), e.error_code
+
+
     data = request.json
-    vm_name = data.get('name')
+    vm_name = data.get('name', f'{vm_id}')
     vm_box = data.get('box','generic/ubuntu2004')
     vm_cpus = data.get('cpus', 2) #default 2 CPU
     vm_ram = data.get ('ram', 1024) #default 1024 MB
-    vm_ip=data.get('ip')
+    vm_ip=data.get('ip', f'{default_ip}')
 
     #Field needed
     if not vm_name:
@@ -85,9 +94,6 @@ def create_vm():
         #Create vm directory
         vm_path = os.path.join(VM_PATH, vm_name)
         os.makedirs(vm_path)
-
-        #Generate vm_id
-        vm_id = generate_unique_id(VM_PATH)
 
         #Create network interfaces for the VM
         url= f"{NET_SERVER}/network/create_int/{vm_id}"
@@ -142,7 +148,7 @@ def delete_vm(vm_name):
 
         #Deleting vm and directory
         v = vagrant.Vagrant(vm_path)
-        #v.destroy()
+        v.destroy()
         shutil.rmtree(vm_path)
         return jsonify({"message": f"VM '{vm_name}' sucessfully deleted!"}), 200
     

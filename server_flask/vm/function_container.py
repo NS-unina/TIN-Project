@@ -46,7 +46,7 @@ def create_item_container_list(container, vm_port):
     with open('Containers.json', 'w') as container_list:
             container_list.write(json.dumps(containerList, indent=4))
 
-    
+    return new_container
 
 #Search value of a field in dictionary
 def check_if_value_field_exists(field, value):

@@ -24,10 +24,6 @@ def create_container():
 
     if not docker_image:
         return jsonify({"error": "Image field is needed"}), 400
-    if not vm_port:
-        return jsonify({"error": "Port field is needed"}), 400
-    if not name:
-        return jsonify({"error": "Name field is needed"}), 400
     
     try:
 
@@ -39,11 +35,24 @@ def create_container():
         if check_if_value_field_exists("vm_port", vm_port):
             return jsonify({'error': f'Container port {vm_port} already in use.'}), 400
         
-        client.containers.run(docker_image,name=name, detach=True, ports={2222:vm_port})
-        container=client.containers.get(name)
-        create_item_container_list(container, vm_port)
 
-        return jsonify({"message": f"Container '{name}' successfully created!"}), 201
+        #if name  or vm_port was provided use it , otherwise use docker generated
+        if name and vm_port:
+            container=client.containers.run(docker_image,name=name,detach=True, ports={"2222/tcp":vm_port})
+        elif name:
+            container=client.containers.run(docker_image,name=name,detach=True, ports={"2222/tcp":None})
+        elif vm_port:
+            container=client.containers.run(docker_image,detach=True, ports={"2222/tcp":vm_port})
+        else:
+            container=client.containers.run(docker_image,detach=True, ports={"2222/tcp":None})
+
+        #refresh to get the assigned port
+        container=client.containers.get(container.name)
+        vm_port= container.attrs["NetworkSettings"]["Ports"]["2222/tcp"][0]["HostPort"]
+
+        new_container=create_item_container_list(container, vm_port)
+
+        return jsonify({"message": f"Container successfully created!","container":new_container}), 201
 
     except ContainerFileNotFound as e:
         return jsonify ({'error': f"{e.message}"}), e.error_code

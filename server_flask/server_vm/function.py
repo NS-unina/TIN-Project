@@ -7,6 +7,7 @@ import string
 import json
 import requests
 import vagrant
+import ipaddress
 
 
 #Directory for vms
@@ -60,16 +61,24 @@ def generate_unique_id(VM_PATH,length=5):
             return vm_id
     
 
-def generate_default_ip(VM_PATH, network):
+def generate_default_ip(VM_PATH, network, excluded_ips):
     try:
         with open(os.path.join(VM_PATH, 'VM_list.json'), 'r') as vm_list:
             vm_dictionary = json.load(vm_list)
     except FileNotFoundError:
         raise VM_listFileNotFound ("VM_list doesn't exists.", error_code=404)
     
+    ip_addresses = ipaddress.ip_network(network, strict=False)
 
-
-    return
+    ips_not_available = list({vm["ip"] for vm in vm_dictionary.values()})
+    print (f"ip not available: {ips_not_available}")
+    print (f"excluded ips: {excluded_ips}")
+    for ip in ip_addresses.hosts():
+        if str(ip) not in (ips_not_available + excluded_ips):
+            return str(ip)
+    
+    #Ip not found
+    raise DefaultIpNotAvailable ("Default IP not available.", error_code=400)
 
 
 # ********[FUNCTION FOR VM STATUS]********

@@ -6,7 +6,8 @@ class Config:
 
     VM_PATH = '../vm' #Directory for vms
     NET_SERVER="http://127.0.0.1:5001" #ip Address for network configurator server
-
+    DEFAULT_NETWORK = "10.1.3.0/24"
+    EXCLUDED_ADDRESSES = ["10.1.3.1"]
 
 
 class ProductionConfig(Config):

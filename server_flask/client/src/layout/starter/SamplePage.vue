@@ -402,30 +402,30 @@ export default {
       axios
         .delete(path)
         .then(() => {
-          this.getVMs();
+          //this.getVMs();
           this.message = "Vm removed!";
           this.showMessage = true;
         })
         .catch((error) => {
           console.error(error);
-          this.getVms();
+          //this.getVms();
         });
     },
     handleReloadVm(vm) {
       this.reloadVm(vm.name);
     },
     reloadVm(vmID) {
-      const path = `http://localhost:5000/reload/${vmID}`;
+      const path = `http://localhost:5000/vm/reload/${vmID}`;
       axios
         .post(path)
         .then(() => {
-          this.getVMs();
+          //this.getVMs();
           this.message = "Vm reloaded!";
           this.showMessage = true;
         })
         .catch((error) => {
           console.error(error);
-          this.getVms();
+          //this.getVms();
         });
     },
     handleStartVm(vm) {

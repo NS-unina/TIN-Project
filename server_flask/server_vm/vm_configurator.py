@@ -20,8 +20,11 @@ app.config.from_object(DevelopmentConfig)  # Load the configuration
 VM_PATH = app.config['VM_PATH']
 
 #Server Address for network configuration 
-NET_SERVER=app.config['NET_SERVER']
+NET_SERVER = app.config['NET_SERVER']
 
+#Default network for vms and exluded addresses
+DEFAULT_NETWORK = app.config['DEFAULT_NETWORK']
+EXCLUDED_ADDRESSES = app.config['EXCLUDED_ADDRESSES']
 
 CORS(app,resources={r'/*':{'origins':'*'}})
 
@@ -72,23 +75,25 @@ def create_vm():
     #Generate vm_id
     try:
         vm_id = generate_unique_id(VM_PATH)
-        default_ip = generate_default_ip(VM_PATH, "10.1.3.0")
     except VM_listFileNotFound as e:
         return jsonify ({'error': f"VM_list doesn't exists."}), e.error_code
-
-
+    
     data = request.json
     vm_name = data.get('name', f'{vm_id}')
     vm_box = data.get('box','generic/ubuntu2004')
     vm_cpus = data.get('cpus', 2) #default 2 CPU
     vm_ram = data.get ('ram', 1024) #default 1024 MB
-    vm_ip=data.get('ip', f'{default_ip}')
-
+    
+    try:
+        default_ip = generate_default_ip(VM_PATH, DEFAULT_NETWORK, EXCLUDED_ADDRESSES)
+        vm_ip=data.get('ip', f'{default_ip}')
+    except DefaultIpNotAvailable as e:
+        return jsonify({"error": "Could not obtain default ip. Ip field is needed"}), 400
+    
     #Field needed
     if not vm_name:
         return jsonify({"error": "name field is needed"}), 400
-    if not vm_ip:
-        return jsonify({"error": "ip field is needed"}), 400
+    
       
     try:
         #Create vm directory

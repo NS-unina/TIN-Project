@@ -44,7 +44,7 @@
                                     <button
                                        type="button"
                                        class="btn btn-link btn-success"
-                                       @click="handleStartContainer(container.name,vmData.ip)"
+                                       @click="handleStartContainer(container.name,vmData[vmName][0].ip)"
 
                                        >
                                     <i
@@ -55,7 +55,7 @@
                                     <button
                                        type="button"
                                        class="btn btn-danger btn-link"
-                                       @click="handleStopContainer(container.name,vmData.ip)"
+                                       @click="handleStopContainer(container.name,vmData[vmName][0].ip)"
 
                                        >
                                     <i
@@ -66,7 +66,7 @@
                                     <button
                                        type="button"
                                        class="btn btn-warning btn-link"
-                                       @click="handleReloadContainer(container.name,vmData.ip)"
+                                       @click="handleReloadContainer(container.name,vmData[vmName][0].ip)"
 
                                        >
                                     <i
@@ -80,7 +80,7 @@
                            <td><button
                               type="button"
                               class="btn btn-danger btn-sm width-150px"
-                              @click="handleDeleteContainer(container.name,vmData.ip)"
+                              @click="handleDeleteContainer(container.name,vmData[vmName][0].ip)"
                               >
                               Delete
                               </button>

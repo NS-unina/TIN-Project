@@ -112,14 +112,14 @@ def create_vm():
         
         #Creating vagrantfile and save information in vm dictionary
         create_vagrantfile(vm_path, vm_name,vm_box, vm_cpus, vm_ram, vm_ip, vm_interface)
-        create_item_vm_list(vm_name, vm_id, vm_ram, vm_cpus, vm_ip,VM_PATH)
+        vm = create_item_vm_list(vm_name, vm_id, vm_ram, vm_cpus, vm_ip,VM_PATH)
 
         #Starting the vm
         v = vagrant.Vagrant(vm_path)
         #v.up()
         status = v.status()
         update_item_vm_list(vm_name, "status", status[0].state,VM_PATH)        
-        return jsonify({"message": f"VM '{vm_name}' successfully created!"}), 201
+        return jsonify({"message": f"VM '{vm_name}' successfully created!", "vm": vm}), 201
 
     except FileExistsError:
         return jsonify({"error": f"VM '{vm_name}' already exist"}), 409
@@ -302,8 +302,74 @@ def list_services():
     
     #[TODO] implementare lista servizi
     
-    services= {"21":"ssh", "23":"telnet"}
+    services= {
+        "21": {
+            "name": "ssh",
+            "images": [
+            {
+            "name": "cowrie/cowrie",
+            "enabled": "1"
+            },
+            {
+            "name": "sussy/sussy",
+            "enabled": "0"
+            },
+            ]
+        },
+        "23": {
+            "name": "telnet",
+            "images": []
+        }
+    }
+    
+    
     return jsonify(services), 200
+
+
+#[TODO]
+@app.route('/vm/services/enable', methods=['POST'])
+def edit_service_priority():
+    data = request.json
+    service_port = data.get('service_port')
+    image = data.get ('image')
+
+    #[TODO] implementare logica da cui prendere la lista di servizi
+    services= {
+        "21": {
+            "name": "ssh",
+            "images": [
+            {
+            "name": "cowrie/cowrie",
+            "enabled": "0"
+            },
+            {
+            "name": "sussy/sussy",
+            "enabled": "0"
+            },
+            ]
+        },
+        "23": {
+            "name": "telnet",
+            "images": []
+        }
+    }
+
+    if service_port not in services:
+        return jsonify({'error': f"Service with port {service_port} not found."})
+
+    images = services[service_port].get("images", [])
+    if not images or not any(item["name"]==image for item in images):
+        return jsonify({'error': f"Image {image} not found."}) , 404
+    print (images)
+    
+    for items in images:
+        if items["name"] == image:
+            items["enabled"] = "1"
+        else:
+            items["enabled"] = "0"
+
+    return jsonify({'message': services}), 200
+
 
 
 @app.route('/vm/ping', methods=['GET'])

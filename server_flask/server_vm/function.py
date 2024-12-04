@@ -71,8 +71,7 @@ def generate_default_ip(VM_PATH, network, excluded_ips):
     ip_addresses = ipaddress.ip_network(network, strict=False)
 
     ips_not_available = list({vm["ip"] for vm in vm_dictionary.values()})
-    print (f"ip not available: {ips_not_available}")
-    print (f"excluded ips: {excluded_ips}")
+    
     for ip in ip_addresses.hosts():
         if str(ip) not in (ips_not_available + excluded_ips):
             return str(ip)
@@ -248,6 +247,7 @@ def create_item_vm_list(vm_name, id, ram, cpu, ip,VM_PATH):
         raise VM_listFileNotFound ("VM_list doesn't exists.", error_code=404)
 
     vm_dictionary[vm_name] = {
+        "name": vm_name,
         "id": id,
         "ram": ram,
         "cpu": cpu,
@@ -257,6 +257,8 @@ def create_item_vm_list(vm_name, id, ram, cpu, ip,VM_PATH):
 
     with open(os.path.join(VM_PATH, 'VM_list.json'), 'w') as vm_list:
         vm_list.write(json.dumps(vm_dictionary, indent=4))
+    
+    return vm_dictionary[vm_name]
     
 
 # Update item in vm dictionary

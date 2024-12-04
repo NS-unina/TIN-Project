@@ -160,8 +160,9 @@ def create_container(vm_ip,vm_port,image):
     response=requests.post(url,json=payload)
     if (response.status_code == 201):
         print("Container created successfully!")
-        print(response.json())
-        return #QUA DEVE RITORNARE IL CONTAINER PRESO DAL RESPONSE
+        print(response.json()["container"])
+        
+        return response.json()["container"]
     else:
         raise CreateContainerFailed (f"{response.json}", error_code=response.status_code)
 
@@ -169,13 +170,13 @@ def create_container(vm_ip,vm_port,image):
 def create_vm(VM_SERVER_URL):
 
     url= f"{VM_SERVER_URL}/vm/create"
+    print (url)
     
     #payload=json.dumps({"":f"{}"})
-    response=requests.post(url,json="") #per ora manda vuoto quindi usa tutti i valori di default
+    response=requests.post(url,json={}) #per ora manda vuoto quindi usa tutti i valori di default
     if (response.status_code == 201):
-        print("Container created successfully!")
-        print(response.json())
-        return #QUA DEVE RITORNARE LA VM PRESO DAL RESPONSE
+        print("Vm created successfully!")
+        return response.json()["vm"]
     else:
         raise CreateContainerFailed (f"{response.json}", error_code=response.status_code)
 

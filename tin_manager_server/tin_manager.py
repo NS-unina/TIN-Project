@@ -14,7 +14,7 @@ app.config.from_object(DevelopmentConfig)  # Load the configuration
 VM_SERVER_URL=f"http://{app.config['VM_SERVER_IP']}:{app.config['VM_SERVER_PORT']}"
 
 #Port for container configuration
-PORT_CONTAINER_SERVER=app.config['PORT_CONTAINER_SERVER']
+CONTAINER_SERVER_PORT=app.config['CONTAINER_SERVER_PORT']
 
 MAX_CONTAINERS=app.config['MAX_CONTAINERS']
 
@@ -27,8 +27,9 @@ try:
     #Obtain vm list
     # vms_list = get_vm_list(VM_SERVER, PORT_CONTAINER_SERVER)
     # print (vms_list)
-    vms_list= {'vms': [{'name': 'my-vm', 'ip': '10.1.3.10', 'status': 'running', 'n_container': '3'}]}
-
+    vms_list= {'vms': []}
+    print (vms_list)
+    
     #Obtain honeyfarm list
     
     HoneyfarmList = {
@@ -79,18 +80,19 @@ except Exception as e:
 
 
 
-#WEBHOOKS for vm and container updates (?) VS POLLING
+#WEBHOOKS for vm and container updates
 
 @app.route('/tinmanager/vmwebhook', methods=['POST'])
 def vm_webhook():
     data = request.json
+    print (data)
     
 
 
 @app.route('/tinmanager/containerwebhook', methods=['POST'])
 def container_webhook():
     data = request.json
-    
+    print(data)
 
 
 
@@ -131,11 +133,12 @@ def add_flow():
             honeyfarm=get_available_vm(vms_list,MAX_CONTAINERS)
 
             if (not honeyfarm):
+                print ("VM not found. Creating vm..")
                 honeyfarm=create_vm(VM_SERVER_URL)          
                      
-            print("chosen vm:", honeyfarm)
+            print("chosen vm:", honeyfarm["ip"])
 
-            honeypot=create_container(honeyfarm,vm_port,image)
+            honeypot=create_container(honeyfarm["ip"],image) #image devo sceglierla in base al servizio 
         
         print ("chosen honeypot: ",honeypot["ip"],honeypot["port"])
 

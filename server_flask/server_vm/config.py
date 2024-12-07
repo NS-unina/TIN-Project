@@ -5,7 +5,8 @@ class Config:
     ENV = 'development'  # Can be 'development', 'testing', or 'production'
 
     VM_PATH = '../vm' #Directory for vms
-    NET_SERVER="http://127.0.0.1:5001" #ip Address for network configurator server
+    NET_SERVER_IP="127.0.0.1" #ip Address for network configurator server
+    NET_SERVER_PORT="5001" #Port for network configurator server
     DEFAULT_NETWORK = "10.1.3.0/24"
     EXCLUDED_ADDRESSES = ["10.1.3.1"]
 

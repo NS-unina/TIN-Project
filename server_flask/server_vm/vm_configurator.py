@@ -3,7 +3,6 @@ from exception import *
 from config import DevelopmentConfig
 from flask import jsonify, send_from_directory
 from flask_cors import CORS
-from time import sleep
 import vagrant
 import shutil
 
@@ -20,7 +19,7 @@ app.config.from_object(DevelopmentConfig)  # Load the configuration
 VM_PATH = app.config['VM_PATH']
 
 #Server Address for network configuration 
-NET_SERVER = app.config['NET_SERVER']
+NET_SERVER_URL=f"http://{app.config['NET_SERVER_IP']}:{app.config['NET_SERVER_PORT']}"
 
 #Default network for vms and exluded addresses
 DEFAULT_NETWORK = app.config['DEFAULT_NETWORK']
@@ -35,23 +34,17 @@ scheduler.add_job(lambda: sync_vm(VM_PATH), trigger=IntervalTrigger(seconds=10))
 
 
 # Check that network configurator server is running
-while (True):
-    try:
-        url= f"{NET_SERVER}/network/ping"
-        response=requests.get(url)
-        if (response.status_code == 200):
-            print("Network Configurator Running, initializing network interfaces\n")
-
-            #Request init list of vm and creations of interfaces
-            vm_id_dictionary = init_int(NET_SERVER,VM_PATH)
-            print (vm_id_dictionary)
-            break     
-    except requests.exceptions.ConnectionError as e:
-        print("Network Configurator Server not found. Check if it's running and if the configured IP and Ports are correct\n")
-    except Exception as e:
-        print (jsonify({"error": f"Error {e}"}), 400)
-    sleep(5)
-    
+try:
+    server_running = ping_server(NET_SERVER_URL)
+    if server_running:
+        print ("Server network is running.")
+        #Request init list of vm and creations of interfaces
+        vm_id_dictionary = init_int(NET_SERVER_URL,VM_PATH)
+        print (vm_id_dictionary)   
+        
+except Exception as e:
+    print (jsonify({"error": f"Error {e}"}), 400)
+            
 
 # Restore vm's last state
 try:
@@ -101,7 +94,7 @@ def create_vm():
         os.makedirs(vm_path)
 
         #Create network interfaces for the VM
-        url= f"{NET_SERVER}/network/create_int/{vm_id}"
+        url= f"{NET_SERVER_URL}/network/create_int/{vm_id}"
         response=requests.post(url,json="")
         if (response.status_code == 201):
             print("Interface created successfully!")
@@ -125,6 +118,8 @@ def create_vm():
         return jsonify({"error": f"VM '{vm_name}' already exist"}), 409
     except VM_listFileNotFound as e:
         return jsonify ({'error': f"VM_list doesn't exists."}), e.error_code
+    except requests.exceptions.ConnectionError as e:
+        return jsonify({'error': 'Network configurator Server not running.'}), 500
     except Exception as e:
         return jsonify({"error": f"Error creating vm. {e}"})
 
@@ -143,7 +138,7 @@ def delete_vm(vm_name):
         vm_id = search_item_vm_list(vm_name, "id",VM_PATH)
 
         #Delete network interfaces for the VM
-        url= f"{NET_SERVER}/network/delete_int/{vm_id}"
+        url= f"{NET_SERVER_URL}/network/delete_int/{vm_id}"
         response=requests.delete(url)
         if (response.status_code == 200):
             print("Interface deleted successfully!")
@@ -161,6 +156,8 @@ def delete_vm(vm_name):
         return jsonify ({'error': f"VM_list doesn't exists."}), e.error_code
     except FieldNotValid as e:
         return jsonify ({'error': f"{e.message}"}), e.error_code
+    except requests.exceptions.ConnectionError as e:
+        return jsonify({'error': 'Network configurator Server not running.'}), 500
     except Exception as e:
         return jsonify({"error": f"Error deleting vm. {e}"}), 500
 

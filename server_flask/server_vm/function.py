@@ -8,13 +8,26 @@ import json
 import requests
 import vagrant
 import ipaddress
+from time import sleep
 
 
-#Directory for vms
-#VM_PATH = '../vm'
+# Check that network configurator server is running
+def ping_server(NET_SERVER):
 
-#Server Address for network configuration (da fare nel file di config)
-#NET_SERVER="http://127.0.0.1:5001"
+    ping = False
+    while (ping == False):
+        try:
+            url= f"{NET_SERVER}/network/ping"
+            response=requests.get(url)
+            if (response.status_code == 200):
+                ping = True
+                return ping
+                  
+        except requests.exceptions.ConnectionError as e:
+            print("Network Configurator Server not found. Check if it's running and if the configured IP and Ports are correct\n")
+        
+        sleep(5)
+
 
 #Vagrantfile creation
 def create_vagrantfile(vagrantfile_path,name,box,cpus,ram,ip,tap):

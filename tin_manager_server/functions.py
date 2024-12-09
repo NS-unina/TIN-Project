@@ -180,3 +180,56 @@ def create_vm(VM_SERVER_URL):
     else:
         raise CreateContainerFailed (f"{response.json}", error_code=response.status_code)
 
+
+
+def create_flow(ovs_id,src_ip,dst_ip,dst_port,container_ip,container_port):
+    
+
+    #ricordare di fare 2 flow (andata e ritorno) e l'elenco dei flow creati
+    #cancellazione basata su lastseen di onos che fa partire pure la cancellazione dei container
+
+    payload=f"""{
+  "priority": 40000,
+  "timeout": 0,
+  "isPermanent": true,
+  "deviceId": ovs_id,
+  "treatment": {
+    "instructions": [
+      {
+        "type": "OUTPUT",
+        "port": "NORMAL"
+      },
+      {
+        "type":"L3MODIFICATION",
+        "subtype":"IPV4_DST",
+        "ip":container_ip
+        },
+            
+      {
+        "type":"L4MODIFICATION",
+        "subtype":"TCP_SRC",
+        "tcpPort":container_port
+      }
+    ]
+  },
+  "selector": {
+    "criteria": [
+      {
+        "type": "ETH_TYPE",
+        "ethType": "0x0800"
+      },
+      {
+        "type": "IPV4_SRC",
+        "ip": src_ip
+      },
+      {
+        "type": "IPV4_DST",
+        "ip": dst_ip
+      },
+      {
+        "type": "TCP_DST",
+        "tcpPort": dst_port
+      },
+    ]
+  }
+}"""

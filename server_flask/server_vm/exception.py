@@ -1,3 +1,5 @@
+import pymongo.errors
+
 class VagrantfileNotFound(FileNotFoundError):
     def __init__(self, message, error_code=None):
         self.message = message
@@ -28,4 +30,28 @@ class DefaultIpNotAvailable(Exception):
         self.message = message
         self.error_code = error_code
         super().__init__(message)
-        
+
+# DATABASE ERROR
+class MongoError(Exception):
+    def __init__(self, message, error_code=None):
+        self.message = message
+        self.error_code = error_code
+        super().__init__(message)
+
+class MongoNotReachable(pymongo.errors.ServerSelectionTimeoutError, MongoError):
+    def __init__(self, message, error_code=None):
+        self.message = message
+        self.error_code = error_code
+        super().__init__(message)
+
+class DatabaseNotFound(MongoError):
+    def __init__(self, message, error_code=None):
+        self.message = message
+        self.error_code = error_code
+        super().__init__(message)
+
+class CollectionNotFound(MongoError):
+    def __init__(self, message, error_code=None):
+        self.message = message
+        self.error_code = error_code
+        super().__init__(message)

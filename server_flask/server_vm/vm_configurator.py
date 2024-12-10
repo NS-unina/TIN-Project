@@ -1,19 +1,24 @@
 from function import *
 from exception import *
-from config import DevelopmentConfig
+
 from flask import jsonify, send_from_directory
-from flask_cors import CORS
 import vagrant
 import shutil
+import pymongo
 
+from config import DevelopmentConfig
+from flask_cors import CORS
 from flask_swagger_ui import get_swaggerui_blueprint
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
 
+
+# ********[ LOAD CONFIGURATION FROM config.py ]********
 app = Flask (__name__)
-app.config.from_object(DevelopmentConfig)  # Load the configuration
+app.config.from_object(DevelopmentConfig)
+CORS(app,resources={r'/*':{'origins':'*'}})
 
 #Directory for vms
 VM_PATH = app.config['VM_PATH']
@@ -25,7 +30,37 @@ NET_SERVER_URL=f"http://{app.config['NET_SERVER_IP']}:{app.config['NET_SERVER_PO
 DEFAULT_NETWORK = app.config['DEFAULT_NETWORK']
 EXCLUDED_ADDRESSES = app.config['EXCLUDED_ADDRESSES']
 
-CORS(app,resources={r'/*':{'origins':'*'}})
+#Default network for vms and exluded addresses
+DATABASE_CONNECTION = app.config['DATABASE_CONNECTION']
+
+
+
+# ********[ STARTUP ]********
+#Connection to database
+try:
+    mongo = pymongo.MongoClient(DATABASE_CONNECTION)
+#   database = mongo["TinDatabase"]
+except pymongo.errors.ServerSelectionTimeoutError as e:
+    pass #[TODO]
+
+
+#Init vm's interfaces of vms already created
+try:
+    server_running = ping_server(NET_SERVER_URL)
+    if server_running:
+        vm_id_dictionary = init_int(NET_SERVER_URL,VM_PATH)
+        print (vm_id_dictionary)   
+except Exception as e:
+    print (jsonify({"error": f"Error {e}"})), 400
+
+# Restore vm's last state
+try:
+    restore_vm_status(VM_PATH)
+except (VM_listFileNotFound, VmNotFound, VagrantfileNotFound) as e:
+    print (e.message, e.error_code)
+except Exception as e:
+    print (f"Error {e}")
+
 
 # Configuration of BackgroundScheduler
 scheduler = BackgroundScheduler()
@@ -33,35 +68,12 @@ scheduler.start()
 scheduler.add_job(lambda: sync_vm(VM_PATH), trigger=IntervalTrigger(seconds=10))
 
 
-# Check that network configurator server is running
-try:
-    server_running = ping_server(NET_SERVER_URL)
-    if server_running:
-        print ("Server network is running.")
-        #Request init list of vm and creations of interfaces
-        vm_id_dictionary = init_int(NET_SERVER_URL,VM_PATH)
-        print (vm_id_dictionary)   
-        
-except Exception as e:
-    print (jsonify({"error": f"Error {e}"}), 400)
-            
-
-# Restore vm's last state
-try:
-    restore_vm_status(VM_PATH)
-except VM_listFileNotFound as e:
-    print (e.message, e.error_code)
-except VmNotFound as e:
-    print (e.message, e.error_code)
-except VagrantfileNotFound as e:
-    print (e.message, e.error_code)
-except Exception as e:
-    print (f"Error {e}")
 
 
 
 
 
+# ********[ API ]********
 @app.route('/vm/create', methods=['POST'])
 def create_vm():
 

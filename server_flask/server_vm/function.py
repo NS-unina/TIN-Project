@@ -21,8 +21,7 @@ def ping_server(NET_SERVER):
             response=requests.get(url)
             if (response.status_code == 200):
                 ping = True
-                return ping
-                  
+                return ping     
         except requests.exceptions.ConnectionError as e:
             print("Network Configurator Server not found. Check if it's running and if the configured IP and Ports are correct\n")
         
@@ -125,7 +124,6 @@ def restore_vm_status (VM_PATH):
             print (f"VM {vm_name} restored to poweroff.")
 
 
-
 # Periodic function to update vm
 def sync_vm(VM_PATH):
     try:
@@ -223,11 +221,8 @@ def update_ip(ip, vm_name,VM_PATH):
 
 
 # ********[DICTIONARY LIST VM]********
-
 #Init dictionary
 def init_int(NET_SERVER,VM_PATH):
-    vm_dictionary = {}
-    
     #Read from id_list already existing interfaces
     try:
         with open(os.path.join(VM_PATH, 'VM_list.json'), 'r') as vm_list:
@@ -328,3 +323,15 @@ def delete_from_dictionary(vm_name,VM_PATH):
             vm_list.write(json.dumps(vm_dictionary, indent=4))
 
 
+
+# ********[DATABASE FUNCTION]********
+def check_database_exists (mongo, database_name):
+    dblist = mongo.list_database_names()
+    if not (f"{database_name}" in dblist):
+        raise DatabaseNotFound (f"Database {database_name} not found.", error_code=404)
+
+def check_collection_exists (mongo, database_name, collection_name):
+    check_database_exists(mongo, database_name)
+    collist = database_name.list_collection_names()
+    if not (f"{collection_name}" in collist):
+        raise CollectionNotFound (f"Collection {database_name} not found.", error_code=404)

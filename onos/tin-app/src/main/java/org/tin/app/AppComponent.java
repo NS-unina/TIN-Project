@@ -14,9 +14,13 @@ import org.onosproject.net.packet.PacketProcessor;
 import org.onosproject.net.packet.PacketContext;
 import org.onosproject.net.packet.InboundPacket;
 import org.onosproject.net.HostId;
+import org.onosproject.net.ConnectPoint;
+import org.onosproject.net.DeviceId;
 
 import org.onlab.packet.Ethernet;
-import org.onlab.packet.IPv4; 
+import org.onlab.packet.IPv4;
+import org.onlab.packet.TCP;
+import org.onlab.packet.UDP;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -71,8 +75,10 @@ public class AppComponent {
                 return;
             }
 
-
+        Check check = new Check();
         InboundPacket inboundPacket = context.inPacket();
+        ConnectPoint connectPoint = inboundPacket.receivedFrom();
+        DeviceId deviceId = connectPoint.deviceId();
         Ethernet ethPacket = inboundPacket.parsed();
 
         if (ethPacket == null){
@@ -91,39 +97,71 @@ public class AppComponent {
             String dstIp = IPv4.fromIPv4Address(ipv4Packet.getDestinationAddress());
 
             log.info ("New ipv4 connection: {} -> {}", srcIp, dstIp);
-
-
-
-
-
-        
-
-            IpCheck ip = new IpCheck();
+              
             try {
-                boolean result = ip.ipCheck("10.1.3.0", "10.1.3.255", dstIp);
-                log.info ("ip check: " + result);
+                if (check.ipCheck("10.1.3.1", "10.1.3.3", dstIp)){
+                    
+                    if (ipv4Packet.getPayload() instanceof TCP) {
+                        TCP tcpPacket = (TCP) ipv4Packet.getPayload();
+                        int srcPort = tcpPacket.getSourcePort();
+                        int dstPort = tcpPacket.getDestinationPort();
+
+                        log.info("Port: " + dstPort);
+                        if(check.portCheck(dstPort)){
+                            log.info("(TCP) Forbidden port");
+                            //Request
+                            HttpClient client = HttpClient.newHttpClient();
+                            String payload = "{"
+                                + "\"src_ip\": \"" + srcIp + "\","
+                                + "\"dst_ip\": \"" + dstIp + "\","
+                                + "\"src_port\": \"" + srcPort + "\","
+                                + "\"dst_port\": \"" + dstPort + "\","
+                                + "\"ovs_id\": \"" + deviceId + "\""
+                                + "}";
+                            log.info("payload" + payload);
+                            HttpRequest request = HttpRequest.newBuilder()
+                                .uri(URI.create("http://127.0.0.1:5001/network/create_int"))
+                                .header("Content-Type", "application/json")
+                                .POST(HttpRequest.BodyPublishers.ofString(payload))
+                                .build();
+                            CompletableFuture<HttpResponse<String>> futureResponse = client.sendAsync(request, HttpResponse.BodyHandlers.ofString());
+                            futureResponse.thenAccept(response -> {log.info("Response Code: " + response.statusCode());  log.info("Response Body: " + response.body());});
+                            }
+                        }
+
+                    if (ipv4Packet.getPayload() instanceof UDP) {
+                        UDP udpPacket = (UDP) ipv4Packet.getPayload();
+                        int srcPort = udpPacket.getSourcePort();
+                        int dstPort = udpPacket.getDestinationPort();
+
+                        log.info("Port: " + dstPort);
+                        if(check.portCheck(dstPort)){
+                            log.info("(UDP) Forbidden port");
+                            //Request
+                            HttpClient client = HttpClient.newHttpClient();
+                            String payload = "{\"src_ip\":\"foo\", \"dst_ip\":\"bar\", \"port\":1}";
+                            HttpRequest request = HttpRequest.newBuilder()
+                                .uri(URI.create("http://127.0.0.1:5001/network/create_int"))
+                                .header("Content-Type", "application/json")
+                                .POST(HttpRequest.BodyPublishers.ofString(payload))
+                                .build();
+                            CompletableFuture<HttpResponse<String>> futureResponse = client.sendAsync(request, HttpResponse.BodyHandlers.ofString());
+                            futureResponse.thenAccept(response -> {log.info("Response Code: " + response.statusCode());  log.info("Response Body: " + response.body());});
+                            }
+                        }
+                    
+                    }
             }              
             catch (UnknownHostException e){
                 log.info ("Error");
             }
 
-
-            //Request
-            HttpClient client = HttpClient.newHttpClient();
-            String payload = "{\"title\":\"foo\", \"body\":\"bar\", \"userId\":1}";
-            HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("http://127.0.0.1:5001/network/create_int"))
-                 .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(payload))
-                .build();
-            CompletableFuture<HttpResponse<String>> futureResponse = client.sendAsync(request, HttpResponse.BodyHandlers.ofString());
-            futureResponse.thenAccept(response -> {log.info("Response Code: " + response.statusCode());  log.info("Response Body: " + response.body());});
-
+            
         }
         }
     }
 
-    private class IpCheck {
+    private class Check {
         public long ipToLong(InetAddress ip) {
             byte[] octets = ip.getAddress();
             long result = 0;
@@ -140,6 +178,17 @@ public class AppComponent {
             long ipToTest = ipToLong(InetAddress.getByName(testIp));
 
         return (ipToTest >= ipLo && ipToTest <= ipHi);
-    }
+        }
+
+        public boolean portCheck (int dstPort){
+            int[] allowed_ports = {5001};
+
+            for (int i=0; i<allowed_ports.length; i++){
+                if (allowed_ports[i] == dstPort){
+                    return false;
+                }
+            }
+            return true;
+        }
     }
 }

@@ -18,6 +18,15 @@ import org.onosproject.net.HostId;
 import org.onlab.packet.Ethernet;
 import org.onlab.packet.IPv4; 
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.concurrent.CompletableFuture;
+
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,6 +52,7 @@ public class AppComponent {
         log.info("App id: "+ appId.id());
 
         packetService.addProcessor(tinProcessor, PacketProcessor.director(2));
+
 
     }
 
@@ -81,9 +91,55 @@ public class AppComponent {
             String dstIp = IPv4.fromIPv4Address(ipv4Packet.getDestinationAddress());
 
             log.info ("New ipv4 connection: {} -> {}", srcIp, dstIp);
-        }
+
+
+
+
+
+        
+
+            IpCheck ip = new IpCheck();
+            try {
+                boolean result = ip.ipCheck("10.1.3.0", "10.1.3.255", dstIp);
+                log.info ("ip check: " + result);
+            }              
+            catch (UnknownHostException e){
+                log.info ("Error");
+            }
+
+
+            //Request
+            HttpClient client = HttpClient.newHttpClient();
+            String payload = "{\"title\":\"foo\", \"body\":\"bar\", \"userId\":1}";
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("http://127.0.0.1:5001/network/create_int"))
+                 .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(payload))
+                .build();
+            CompletableFuture<HttpResponse<String>> futureResponse = client.sendAsync(request, HttpResponse.BodyHandlers.ofString());
+            futureResponse.thenAccept(response -> {log.info("Response Code: " + response.statusCode());  log.info("Response Body: " + response.body());});
 
         }
+        }
+    }
 
+    private class IpCheck {
+        public long ipToLong(InetAddress ip) {
+            byte[] octets = ip.getAddress();
+            long result = 0;
+            for (byte octet : octets) {
+                result <<= 8;
+                result |= octet & 0xff;
+            }
+            return result;
+        }
+
+        public boolean ipCheck(String firstIp, String lastIp, String testIp) throws UnknownHostException {
+            long ipLo = ipToLong(InetAddress.getByName(firstIp));
+            long ipHi = ipToLong(InetAddress.getByName(lastIp));
+            long ipToTest = ipToLong(InetAddress.getByName(testIp));
+
+        return (ipToTest >= ipLo && ipToTest <= ipHi);
+    }
     }
 }

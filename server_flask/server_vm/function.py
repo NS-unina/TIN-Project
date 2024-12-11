@@ -58,31 +58,28 @@ def create_vagrantfile(vagrantfile_path,name,box,cpus,ram,ip,tap):
         vagrant_file.write(vagrantfile_content)
     return
 
-#Define vm's id
-def generate_unique_id(VM_PATH,length=5):
-    
-    try:
-        with open(os.path.join(VM_PATH, 'VM_list.json'), 'r') as vm_list:
-            vm_dictionary = json.load(vm_list)
-    except FileNotFoundError:
-        raise VM_listFileNotFound ("VM_list doesn't exists.", error_code=404)
-
+# #Define vm's id
+def generate_unique_id(collection,length=5):
+ 
+    id_list = collection.find({}, {"_id": 0, "id": 1}) 
     while True:
         vm_id = ''.join(random.choices(string.ascii_letters + string.digits, k=length))
-        if vm_id not in vm_dictionary:
+        if vm_id not in id_list:
             return vm_id
     
 
-def generate_default_ip(VM_PATH, network, excluded_ips):
-    try:
-        with open(os.path.join(VM_PATH, 'VM_list.json'), 'r') as vm_list:
-            vm_dictionary = json.load(vm_list)
-    except FileNotFoundError:
-        raise VM_listFileNotFound ("VM_list doesn't exists.", error_code=404)
+def generate_default_ip(collection, network, excluded_ips):
+    # try:
+    #     with open(os.path.join(VM_PATH, 'VM_list.json'), 'r') as vm_list:
+    #         vm_dictionary = json.load(vm_list)
+    # except FileNotFoundError:
+    #     raise VM_listFileNotFound ("VM_list doesn't exists.", error_code=404)
+
+    ips_not_available = list(collection.find({}, {"_id": 0, "ip": 1}) )
     
     ip_addresses = ipaddress.ip_network(network, strict=False)
 
-    ips_not_available = list({vm["ip"] for vm in vm_dictionary.values()})
+    #ips_not_available = list({vm["ip"] for vm in vm_dictionary.values()})
     
     for ip in ip_addresses.hosts():
         if str(ip) not in (ips_not_available + excluded_ips):
@@ -95,37 +92,31 @@ def generate_default_ip(VM_PATH, network, excluded_ips):
 # ********[FUNCTION FOR VM STATUS]********
 
 # Restore vm based on last status
-def restore_vm_status (VM_PATH):
-    try:
-        with open(os.path.join(VM_PATH, 'VM_list.json'), 'r') as vm_list:
-            vm_dictionary = json.load(vm_list)
-    except FileNotFoundError as e:
-        raise VM_listFileNotFound ("VM_list doesn't exists.", error_code=404)
+def restore_vm_status (VM_PATH,collection):
 
-    for vm_name in vm_dictionary:
-        status = vm_dictionary[vm_name]["status"]
+    for vm in collection.find({}, {"_id": 0, "name": 1,"status": 1}):
 
         #Check if vm folder exists
-        vm_path = os.path.join(VM_PATH, vm_name)
+        vm_path = os.path.join(VM_PATH, vm["name"])
         if not os.path.exists(vm_path):
-            raise VmNotFound (f"VM '{vm_name}' not found.", error_code=404)
+            raise VmNotFound (f"VM '{vm["name"]}' not found.", error_code=404)
         
         #Check if vagrantfile exist
-        vagrantfile_path = os.path.join(VM_PATH, vm_name, "Vagrantfile")
+        vagrantfile_path = os.path.join(VM_PATH, vm["name"], "Vagrantfile")
         if not os.path.exists(vagrantfile_path):
             raise VagrantfileNotFound ("Vagrantfile not found.", error_code=404)
 
         v = vagrant.Vagrant(vm_path)
-        if status == "running":
+        if vm["status"] == "running":
             v.up()
-            print (f"VM {vm_name} restored to running.")
-        elif status == "poweroff":
+            print (f"VM {vm["name"]} restored to running.")
+        elif vm["status"] == "poweroff":
             v.halt()
-            print (f"VM {vm_name} restored to poweroff.")
+            print (f"VM {vm["name"]} restored to poweroff.")
 
 
 # Periodic function to update vm
-def sync_vm(VM_PATH):
+def sync_vm(VM_PATH, collection):
     try:
         for vm_name in os.listdir(VM_PATH):
             vm_path = os.path.join(VM_PATH, vm_name)
@@ -134,7 +125,7 @@ def sync_vm(VM_PATH):
                     continue                   
                 v = vagrant.Vagrant(vm_path)
                 status = v.status()
-                update_item_vm_list(vm_name, "status", status[0].state,VM_PATH)
+                update_item_vm_list(vm_name, "status", status[0].state,collection)
                 print ("ok")
 
     except VagrantfileNotFound as e:
@@ -221,40 +212,31 @@ def update_ip(ip, vm_name,VM_PATH):
 
 
 # ********[DICTIONARY LIST VM]********
-#Init dictionary
-def init_int(NET_SERVER,VM_PATH):
-    #Read from id_list already existing interfaces
-    try:
-        with open(os.path.join(VM_PATH, 'VM_list.json'), 'r') as vm_list:
-            vm_dictionary = json.load(vm_list)
-    except FileNotFoundError:
-        vm_list = open(os.path.join(VM_PATH, 'VM_list.json'), 'w')
-        vm_list.write(json.dumps({}, indent=4))
-        vm_list.close()
-    except json.JSONDecodeError as err:
-        print (err)
-    
-    #Request creating already existing interfaces
-    for key, value in vm_dictionary.items():
-        veth_name = value.get("id")
+#Init interfaces
+def init_int(NET_SERVER,collection):
 
-        url= f"{NET_SERVER}/network/create_int/{veth_name}"
+    ids = (collection.find({}, {"_id": 1}) )
+
+    for id in ids:
+        print("creating interface with id: ", id)
+        url= f"{NET_SERVER}/network/create_int/{id}"
         response=requests.post(url,json="")
         print (response.json())
 
-    return vm_dictionary
+    return
+    
+ 
 
 
 # Create item in vm dictionary
-def create_item_vm_list(vm_name, id, ram, cpu, ip,VM_PATH):
+def create_item_vm_list(vm_name, id, ram, cpu, ip, collection):
 
-    try:
-        with open(os.path.join(VM_PATH, 'VM_list.json'), 'r') as vm_list:
-            vm_dictionary = json.load(vm_list)
-    except FileNotFoundError as e:
-        raise VM_listFileNotFound ("VM_list doesn't exists.", error_code=404)
-
-    vm_dictionary[vm_name] = {
+    # try:
+    #     with open(os.path.join(VM_PATH, 'VM_list.json'), 'r') as vm_list:
+    #         vm_dictionary = json.load(vm_list)
+    # except FileNotFoundError as e:
+    #     raise VM_listFileNotFound ("VM_list doesn't exists.", error_code=404)
+    newvm = {
         "name": vm_name,
         "id": id,
         "ram": ram,
@@ -263,65 +245,45 @@ def create_item_vm_list(vm_name, id, ram, cpu, ip,VM_PATH):
         "status": "not created"
     }
 
-    with open(os.path.join(VM_PATH, 'VM_list.json'), 'w') as vm_list:
-        vm_list.write(json.dumps(vm_dictionary, indent=4))
+    result = collection.insert_one(newvm)
+
+    if (not result):
+        raise FailedInsertion(f"Insert of vm {vm_name} failed", error_code=500)
     
-    return vm_dictionary[vm_name]
+    return newvm
     
 
 # Update item in vm dictionary
-def update_item_vm_list(vm_name, field, value_field,VM_PATH):
+def update_item_vm_list(vm_name, field, value_field,collection):
 
-    try:
-        with open(os.path.join(VM_PATH, 'VM_list.json'), 'r') as vm_list:
-            vm_dictionary = json.load(vm_list)
-    except FileNotFoundError:
-        raise VM_listFileNotFound ("VM_list doesn't exists.", error_code=404)
+    result = collection.update_one(
+        {"name": f"{vm_name}"},            
+        {"$set": {f"{field}": value_field}}
+        )
 
-    if vm_name in vm_dictionary:
-        if field in vm_dictionary[vm_name]:
-            vm_dictionary[vm_name][field] = value_field
-        else:
-           raise FieldNotValid (f"Field '{field}' doesn't exists.", error_code=400)
-    else:
-        raise FieldNotValid (f"VM '{vm_name}' doesn't exists.", error_code=400)
+    print("Matched item:", result.matched_count)
+    print("Modified item:", result.modified_count)
+
+    if(result.modified_count==0):
+        raise FieldNotValid (f"Update on vm {vm_name} on field {field} failed", error_code=400)
     
-    with open(os.path.join(VM_PATH, 'VM_list.json'), 'w') as vm_list:
-        vm_list.write(json.dumps(vm_dictionary, indent=4))
-
 
 #Search value of a field in dictionary
-def search_item_vm_list(vm_name, field,VM_PATH):
+def search_item_vm_list(vm_name, field, collection):
 
-    try:
-        with open(os.path.join(VM_PATH, 'VM_list.json'), 'r') as vm_list:
-            vm_dictionary = json.load(vm_list)
-    except FileNotFoundError as e:
-        raise VM_listFileNotFound ("VM_list doesn't exists.", error_code=404)
+    item = collection.findOne({"name": vm_name }, {"_id": 0 , f"{field}":1})
+    if (not item):
+        raise FieldNotValid (f"Cannot find item for vm {vm_name} with field {field}", error_code=404) #[TODO] cambiare eventualmente fieldnotvalid per renderlo generico
+    return item
 
-    if vm_name in vm_dictionary:
-        if field in vm_dictionary[vm_name]:
-            return vm_dictionary[vm_name][field]
-        else:
-           raise FieldNotValid (f"Field '{field}' doesn't exists.", error_code=400)
-    else:
-        raise FieldNotValid (f"VM '{vm_name}' doesn't exists.", error_code=400)
 
 #Delete from dictionary
-def delete_from_dictionary(vm_name,VM_PATH):
-    
-    try:
-        with open(os.path.join(VM_PATH, 'VM_list.json'), 'r') as vm_list:
-            vm_dictionary = json.load(vm_list)
-    except FileNotFoundError as e:
-        raise VM_listFileNotFound ("VM_list doesn't exists.", error_code=404)
+def delete_from_dictionary(vm_name, collection):
 
-    if vm_name in vm_dictionary:
-        del vm_dictionary[vm_name]
-    
-        with open(os.path.join(VM_PATH, 'VM_list.json'), 'w') as vm_list:
-            vm_list.write(json.dumps(vm_dictionary, indent=4))
-
+    result = collection.delete_one({"name": vm_name})
+    if (result.deleted_count==0):
+        raise FieldNotValid (f"Cannot delete vm {vm_name} ", error_code=400) 
+ 
 
 
 # ********[DATABASE FUNCTION]********

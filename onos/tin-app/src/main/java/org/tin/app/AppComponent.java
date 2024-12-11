@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
 @Component(immediate = true)// Ensure this component is activated immediately
 public class AppComponent {
 
-    private final Logger log= LoggerFactory.getLogger(getClass());
+    private final Logger log = LoggerFactory.getLogger(getClass());
     private ApplicationId appId;
     private TinProcessor tinProcessor = new TinProcessor();
 
@@ -53,7 +53,7 @@ public class AppComponent {
     protected void activate() {        
         log.info("TinApp has been activated!");
         appId = coreService.registerApplication("org.tin.app");
-        log.info("App id: "+ appId.id());
+        log.info("App id: " + appId.id());
 
         packetService.addProcessor(tinProcessor, PacketProcessor.director(2));
 
@@ -76,10 +76,12 @@ public class AppComponent {
             }
 
         Check check = new Check();
+
         InboundPacket inboundPacket = context.inPacket();
+        Ethernet ethPacket = inboundPacket.parsed();
+
         ConnectPoint connectPoint = inboundPacket.receivedFrom();
         DeviceId deviceId = connectPoint.deviceId();
-        Ethernet ethPacket = inboundPacket.parsed();
 
         if (ethPacket == null){
             return;
@@ -88,7 +90,7 @@ public class AppComponent {
         HostId srcId = HostId.hostId(ethPacket.getSourceMAC());
         HostId dstId = HostId.hostId(ethPacket.getDestinationMAC());
         log.info("New connection detected: {} -> {}", srcId, dstId);
-        log.info("cringe"+ethPacket.getEtherType());
+        log.info("cringe" + ethPacket.getEtherType());
 
         if (ethPacket.getEtherType() == Ethernet.TYPE_IPV4){
             IPv4 ipv4Packet = (IPv4) ethPacket.getPayload();

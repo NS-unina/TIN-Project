@@ -39,18 +39,19 @@ DATABASE_CONNECTION = app.config['DATABASE_CONNECTION']
 #Connection to database
 try:
     mongo = pymongo.MongoClient(DATABASE_CONNECTION)
-#   database = mongo["TinDatabase"]
+    database = mongo["tinDatabase"] 
+    collection= database["vmList"]
+    collection.create_index("name", unique=True)
 except pymongo.errors.ServerSelectionTimeoutError as e:
-    pass #[TODO]
+    pass #[TODO] loop
 
 
 #Init vm's interfaces of vms already created
 try:
     server_running = ping_server(NET_SERVER_URL)
     if server_running:
-        vm_id_dictionary = init_int(NET_SERVER_URL,VM_PATH)
-        print (vm_id_dictionary)   
-except Exception as e:
+        init_int(NET_SERVER_URL,collection)
+except Exception as e: #[TODO] gestire eccezioni mongo poi
     print (jsonify({"error": f"Error {e}"})), 400
 
 # Restore vm's last state
@@ -65,7 +66,7 @@ except Exception as e:
 # Configuration of BackgroundScheduler
 scheduler = BackgroundScheduler()
 scheduler.start()
-scheduler.add_job(lambda: sync_vm(VM_PATH), trigger=IntervalTrigger(seconds=10))
+scheduler.add_job(lambda: sync_vm(VM_PATH, collection), trigger=IntervalTrigger(seconds=10))
 
 
 
@@ -117,13 +118,13 @@ def create_vm():
         
         #Creating vagrantfile and save information in vm dictionary
         create_vagrantfile(vm_path, vm_name,vm_box, vm_cpus, vm_ram, vm_ip, vm_interface)
-        vm = create_item_vm_list(vm_name, vm_id, vm_ram, vm_cpus, vm_ip,VM_PATH)
+        vm = create_item_vm_list(vm_name, vm_id, vm_ram, vm_cpus, vm_ip, collection)
 
         #Starting the vm
         v = vagrant.Vagrant(vm_path)
         #v.up()
         status = v.status()
-        update_item_vm_list(vm_name, "status", status[0].state,VM_PATH)        
+        update_item_vm_list(vm_name, "status", status[0].state, collection)        
         return jsonify({"message": f"VM '{vm_name}' successfully created!", "vm": vm}), 201
 
     except FileExistsError:
@@ -147,14 +148,14 @@ def delete_vm(vm_name):
             return jsonify({"error": f"VM '{vm_name}' doesn't exist"}), 404
 
         #Find associated interface
-        vm_id = search_item_vm_list(vm_name, "id",VM_PATH)
+        vm_id = search_item_vm_list(vm_name, "id",collection)
 
         #Delete network interfaces for the VM
         url= f"{NET_SERVER_URL}/network/delete_int/{vm_id}"
         response=requests.delete(url)
         if (response.status_code == 200):
             print("Interface deleted successfully!")
-            delete_from_dictionary(vm_name,VM_PATH)
+            delete_from_dictionary(vm_name,collection)
         else:
             return jsonify({"error": f"Request failed with status code: {response.status_code}"})
 
@@ -178,15 +179,9 @@ def delete_vm(vm_name):
 def read_vms():
 
     try:
-        with open(os.path.join(VM_PATH, 'VM_list.json'), 'r') as vm_list:
-            vm_dictionary = json.load(vm_list)
-    
-        vm_statuses = [{"name": key, **value} for key, value in vm_dictionary.items()]
-        response={"vms": vm_statuses}
-        return jsonify(response), 200
-    
-    except VM_listFileNotFound as e:
-        return jsonify ({'error': f"VM_list doesn't exists."}), e.error_code
+        vmlist = collection.find({} ,{"_id": 0})  # Empty filter to get all documents
+        return jsonify(vmlist), 200
+
     except Exception as e:
         return jsonify({"error": f"Error in reading vms status. {e}"}), 500
 
@@ -209,18 +204,18 @@ def update_vm(vm_name):
 
         if (vm_cpus):
             update_cpu(vm_cpus, vm_name,VM_PATH)
-            update_item_vm_list(vm_name, "cpu", vm_cpus,VM_PATH)
+            update_item_vm_list(vm_name, "cpu", vm_cpus,collection)
         if (vm_ram):
             update_ram(vm_ram, vm_name,VM_PATH)  
-            update_item_vm_list(vm_name, "ram", vm_ram,VM_PATH)
+            update_item_vm_list(vm_name, "ram", vm_ram,collection)
         if (vm_ip):
             update_ip(vm_ip, vm_name,VM_PATH)
-            update_item_vm_list(vm_name, "ip", vm_ip,VM_PATH)
+            update_item_vm_list(vm_name, "ip", vm_ip,collection)
 
         v = vagrant.Vagrant(vm_path)
         #v.reload()
         status = v.status()
-        update_item_vm_list(vm_name, "status", status[0].state,VM_PATH)
+        update_item_vm_list(vm_name, "status", status[0].state,collection)
         return jsonify({"message": f"VM '{vm_name}' sucessfully updated!.", "CPU": f"{vm_cpus}", "RAM": f"{vm_ram}", "IP": f"{vm_ip}"}), 200
 
     except VagrantfileNotFound as e:
@@ -246,7 +241,7 @@ def power_start_vm(vm_name):
         v = vagrant.Vagrant(vm_path)
         v.up()
         status = v.status()
-        update_item_vm_list(vm_name, "status", status[0].state,VM_PATH)
+        update_item_vm_list(vm_name, "status", status[0].state,collection)
         return jsonify({"message": f"VM '{vm_name}' successfully started!"}), 200
     
     except VM_listFileNotFound as e:
@@ -270,7 +265,7 @@ def power_stop_vm(vm_name):
         v = vagrant.Vagrant(vm_path)
         v.halt()
         status = v.status()
-        update_item_vm_list(vm_name, "status", status[0].state,VM_PATH)
+        update_item_vm_list(vm_name, "status", status[0].state,collection)
         return jsonify({"message": f"VM '{vm_name}' successfully stopped!"}), 200
     
     except VM_listFileNotFound as e:
@@ -294,7 +289,7 @@ def power_vm(vm_name):
         v = vagrant.Vagrant(vm_path)
         v.reload()
         status = v.status()
-        update_item_vm_list(vm_name, "status", status[0].state,VM_PATH)
+        update_item_vm_list(vm_name, "status", status[0].state,collection)
         return jsonify({"message": f"VM '{vm_name}' successfully reloaded!"}), 201
     
     except VM_listFileNotFound as e:

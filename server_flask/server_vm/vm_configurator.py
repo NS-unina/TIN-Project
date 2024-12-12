@@ -2,8 +2,9 @@ from function import *
 from exception import *
 
 from flask import jsonify, send_from_directory
+from time import sleep
+from shutil import rmtree
 import vagrant
-import shutil
 import pymongo
 
 from config import DevelopmentConfig
@@ -36,40 +37,54 @@ DATABASE_CONNECTION = app.config['DATABASE_CONNECTION']
 
 
 # ********[ STARTUP ]********
-#Connection to database
-try:
-    mongo = pymongo.MongoClient(DATABASE_CONNECTION)
-    database = mongo["tinDatabase"] 
-    collection= database["vmList"]
-    collection.create_index("name", unique=True)
-except pymongo.errors.ServerSelectionTimeoutError as e:
-    pass #[TODO] loop
+while True:
+    try:
+        #Connection to database
+        print ("Connecting to database...")
+        mongo = pymongo.MongoClient(DATABASE_CONNECTION)
+        database = mongo["tinDatabase"] 
+        collection= database["vmList"]
+        collection.create_index("name", unique=True)
 
+        # Attempt to connect to the network server
+        print("\nConnecting to network server...")
+        url = f"{NET_SERVER_URL}/network/ping"
+        response = requests.get(url)
+        
+        # Initialize interfaces
+        print ("\nInitializing interfaces ... ")
+        if response.status_code == 200:
+            init_int(NET_SERVER_URL, collection)
+        else:
+            raise NetworkServerError (f"Failed initializing interfaces. Response: {response.json}", error_code=response.status_code)
+        
+        # Restore vm's last state
+        print ("\nRestoring vm's last state ... ")
+        restore_vm_status(VM_PATH, collection)
 
-#Init vm's interfaces of vms already created
-try:
-    server_running = ping_server(NET_SERVER_URL)
-    if server_running:
-        init_int(NET_SERVER_URL,collection)
-except Exception as e: #[TODO] gestire eccezioni mongo poi
-    print (jsonify({"error": f"Error {e}"})), 400
+        print ("\nSTARTUP DONE")
+        break
 
-# Restore vm's last state
-try:
-    restore_vm_status(VM_PATH, collection)
-except (VmNotFound, VagrantfileNotFound) as e:
-    print (e.message, e.error_code)
-except Exception as e:
-    print (f"Error {e}")
+    except requests.exceptions.ConnectionError as e:
+        print("[ERROR] Connection to network configurator failed. Retrying...")
+        sleep(7)
+    except pymongo.errors.ConnectionFailure as e:
+        print ("[ERROR] Connection to database failed. Trying to reconnect...")
+        sleep(3)
+    except NetworkServerError as e:
+        print (e.message)
+    except (VmNotFound, VagrantfileNotFound) as e:
+        print (f"Could not restore vms status. {e.message}")
+        break
+    except Exception as e:
+        print(jsonify({"error": f"{str(e)}"}))
+        break
 
 
 # Configuration of BackgroundScheduler
 scheduler = BackgroundScheduler()
 scheduler.start()
-scheduler.add_job(lambda: sync_vm(VM_PATH, collection), trigger=IntervalTrigger(seconds=10))
-
-
-
+scheduler.add_job(lambda: sync_vm(VM_PATH, collection), trigger=IntervalTrigger(seconds=15))
 
 
 
@@ -106,8 +121,7 @@ def create_vm():
         url= f"{NET_SERVER_URL}/network/create_int/{vm_id}"
         response=requests.post(url,json="")
         if (response.status_code == 201):
-            print("Interface created successfully!")
-            print(response.json())
+            print(f"Interface created successfully!. Response: {response.json()}")
             vm_interface = response.json()["interface"]
         else:
             return jsonify({'error': f"Request failed."}), response.status_code
@@ -127,6 +141,10 @@ def create_vm():
         return jsonify({"error": f"VM '{vm_name}' already exist"}), 409
     except requests.exceptions.ConnectionError as e:
         return jsonify({'error': 'Network configurator Server not running.'}), 500
+    except pymongo.errors.ConnectionFailure as e:
+        return jsonify({'error': 'Connection to database failed.'}), 500
+    except FailedInsertion as e:
+        return jsonify({'error': f'{e.message}'}), 500
     except Exception as e:
         return jsonify({"error": f"Error creating vm. {e}"}), 500
 
@@ -148,21 +166,23 @@ def delete_vm(vm_name):
         url= f"{NET_SERVER_URL}/network/delete_int/{vm_id}"
         response=requests.delete(url)
         if (response.status_code == 200):
-            print("Interface deleted successfully!")
+            print(f"Interface deleted successfully!. Response: {response.json()}")
             delete_from_dictionary(vm_name,collection)
         else:
-            return jsonify({"error": f"Request failed."}), response.status_code
+            return jsonify({"error": f"Request failed. Response: {response.json()}"}), response.status_code
 
         #Deleting vm and directory
         v = vagrant.Vagrant(vm_path)
         #v.destroy()
-        shutil.rmtree(vm_path)
+        rmtree(vm_path)
         return jsonify({"message": f"VM '{vm_name}' sucessfully deleted!"}), 200
     
-    except FieldNotValid as e:
-        return jsonify ({'error': f"{e.message}"}), e.error_code
+    except ItemNotFound as e:
+        return jsonify ({'error': f"{e.message}"}), 404
     except requests.exceptions.ConnectionError as e:
         return jsonify({'error': 'Network configurator Server not running.'}), 500
+    except pymongo.errors.ConnectionFailure as e:
+        return jsonify({'error': 'Connection to database failed.'}), 500
     except Exception as e:
         return jsonify({"error": f"Error deleting vm. {e}"}), 500
 
@@ -173,7 +193,8 @@ def list_vms():
     try:
         vmlist = list(collection.find({} ,{"_id": 0}))
         return jsonify(vmlist), 200
-
+    except pymongo.errors.ConnectionFailure as e:
+        return jsonify({'error': 'Connection to database failed.'}), 500
     except Exception as e:
         return jsonify({"error": f"Error in reading vms status. {e}"}), 500
 
@@ -193,7 +214,7 @@ def update_vm(vm_name):
         vm_path = os.path.join(VM_PATH, vm_name)
         if not os.path.exists(vm_path):
             return jsonify({"error": f"VM '{vm_name}' doesn't exist"}), 404
-
+    
         if (vm_cpus):
             update_cpu(vm_cpus, vm_name,VM_PATH)
             update_item_vm_list(vm_name, "cpu", vm_cpus,collection)
@@ -212,8 +233,12 @@ def update_vm(vm_name):
 
     except VagrantfileNotFound as e:
         return jsonify({"error": f"{e.message}"}), 404
-    except FieldNotValid as e:
+    except VmNotFound as e:
+        return jsonify({"error": f"{e.message}"}), 404
+    except ItemNotModified as e:
         return jsonify ({'error': f"{e.message}"}), e.error_code
+    except pymongo.errors.ConnectionFailure as e:
+        return jsonify({'error': 'Connection to database failed.'}), 500
     except Exception as e:
         return jsonify({"error": f"Error updating vm. {e}"}), 500
 
@@ -234,8 +259,12 @@ def power_start_vm(vm_name):
         update_item_vm_list(vm_name, "status", status[0].state,collection)
         return jsonify({"message": f"VM '{vm_name}' successfully started!"}), 200
     
-    except FieldNotValid as e:
+    except VmNotFound as e:
+        return jsonify({"error": f"{e.message}"}), 404
+    except ItemNotModified as e:
         return jsonify ({'error': f"{e.message}"}), e.error_code
+    except pymongo.errors.ConnectionFailure as e:
+        return jsonify({'error': 'Connection to database failed.'}), 500
     except Exception as e:
         return jsonify({"error": f"Error starting  vm. {e}"}), 500
 
@@ -256,8 +285,12 @@ def power_stop_vm(vm_name):
         update_item_vm_list(vm_name, "status", status[0].state,collection)
         return jsonify({"message": f"VM '{vm_name}' successfully stopped!"}), 200
     
-    except FieldNotValid as e:
+    except VmNotFound as e:
+        return jsonify({"error": f"{e.message}"}), 404
+    except ItemNotModified as e:
         return jsonify ({'error': f"{e.message}"}), e.error_code
+    except pymongo.errors.ConnectionFailure as e:
+        return jsonify({'error': 'Connection to database failed.'}), 500
     except Exception as e:
         return jsonify({"error": f"Error starting  vm. {e}"}), 500
 
@@ -278,8 +311,12 @@ def power_vm(vm_name):
         update_item_vm_list(vm_name, "status", status[0].state,collection)
         return jsonify({"message": f"VM '{vm_name}' successfully reloaded!"}), 201
     
-    except FieldNotValid as e:
+    except VmNotFound as e:
+        return jsonify({"error": f"{e.message}"}), 404
+    except ItemNotModified as e:
         return jsonify ({'error': f"{e.message}"}), e.error_code
+    except pymongo.errors.ConnectionFailure as e:
+        return jsonify({'error': 'Connection to database failed.'}), 500
     except Exception as e:
         return jsonify({"error": f"Error starting  vm. {e}"}), 500
 

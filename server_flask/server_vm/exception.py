@@ -1,25 +1,7 @@
 import pymongo.errors
 
-class VagrantfileNotFound(FileNotFoundError):
-    def __init__(self, message, error_code=None):
-        self.message = message
-        self.error_code = error_code
-        super().__init__(message) 
-
-
-# class VM_listFileNotFound(FileNotFoundError):
-#     def __init__(self, message, error_code=None):
-#         self.message = message
-#         self.error_code = error_code
-#         super().__init__(message)
-
-class VmNotFound(FileNotFoundError):
-    def __init__(self, message, error_code=None):
-        self.message = message
-        self.error_code = error_code
-        super().__init__(message)
-
-class FieldNotValid(Exception):
+#Network Exceptions
+class NetworkServerError(Exception):
     def __init__(self, message, error_code=None):
         self.message = message
         self.error_code = error_code
@@ -30,15 +12,40 @@ class DefaultIpNotAvailable(Exception):
         self.message = message
         self.error_code = error_code
         super().__init__(message)
+    
 
-# DATABASE ERROR
+class VmNotFound(FileNotFoundError):
+    def __init__(self, message, error_code=None):
+        self.message = message
+        self.error_code = error_code
+        super().__init__(message)
+
+class VagrantfileNotFound(FileNotFoundError):
+    def __init__(self, message, error_code=None):
+        self.message = message
+        self.error_code = error_code
+        super().__init__(message) 
+
+#Mongo Exception
 class MongoError(Exception):
     def __init__(self, message, error_code=None):
         self.message = message
         self.error_code = error_code
         super().__init__(message)
 
-class MongoNotReachable(pymongo.errors.ServerSelectionTimeoutError, MongoError):
+class ItemNotModified(MongoError):
+    def __init__(self, message, error_code=None):
+        self.message = message
+        self.error_code = error_code
+        super().__init__(message)
+
+class ItemNotFound(MongoError):
+    def __init__(self, message, error_code=None):
+        self.message = message
+        self.error_code = error_code
+        super().__init__(message)
+
+class FailedInsertion(MongoError):
     def __init__(self, message, error_code=None):
         self.message = message
         self.error_code = error_code
@@ -56,21 +63,21 @@ class CollectionNotFound(MongoError):
         self.error_code = error_code
         super().__init__(message)
 
-class FailedInsertion(MongoError):
-    def __init__(self, message, error_code=None):
-        self.message = message
-        self.error_code = error_code
-        super().__init__(message)
 
-class ItemNotFound(MongoError):
-    def __init__(self, message, error_code=None):
-        self.message = message
-        self.error_code = error_code
-        super().__init__(message)
 
-class ItemNotModified(MongoError):
-    def __init__(self, message, error_code=None):
-        self.message = message
-        self.error_code = error_code
-        super().__init__(message)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         

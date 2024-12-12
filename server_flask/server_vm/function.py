@@ -4,29 +4,20 @@ import os
 import re
 import random
 import string
-import json
 import requests
 import vagrant
 import ipaddress
-from time import sleep
 
+#Init interfaces
+def init_int(NET_SERVER,collection):
 
-# Check that network configurator server is running
-def ping_server(NET_SERVER):
+    ids = collection.find({}, {"_id": 0, "id": 1})
 
-    ping = False
-    while (ping == False):
-        try:
-            url= f"{NET_SERVER}/network/ping"
-            response=requests.get(url)
-            if (response.status_code == 200):
-                ping = True
-                return ping     
-        except requests.exceptions.ConnectionError as e:
-            print("Network Configurator Server not found. Check if it's running and if the configured IP and Ports are correct\n")
-        
-        sleep(5)
-
+    for item in ids:
+        url= f"{NET_SERVER}/network/create_int/{item["id"]}"
+        response=requests.post(url,json="")
+        print (f"Inizialized interface {item["id"]}. Network server response: {response.json()}")
+    return
 
 #Vagrantfile creation
 def create_vagrantfile(vagrantfile_path,name,box,cpus,ram,ip,tap):
@@ -99,7 +90,7 @@ def restore_vm_status (VM_PATH,collection):
         #Check if vagrantfile exist
         vagrantfile_path = os.path.join(VM_PATH, vm["name"], "Vagrantfile")
         if not os.path.exists(vagrantfile_path):
-            raise VagrantfileNotFound ("Vagrantfile not found.", error_code=404)
+            raise VagrantfileNotFound (f"Vagrantfile for {vm["name"]} not found.", error_code=404)
 
         v = vagrant.Vagrant(vm_path)
         if vm["status"] == "running":
@@ -122,21 +113,22 @@ def sync_vm(VM_PATH, collection):
                 v = vagrant.Vagrant(vm_path)
                 status = v.status()
                 update_item_vm_list(vm_name, "status", status[0].state, collection)
-                print ("ok")
+                print ("Updated vms status")
 
         except VagrantfileNotFound as e:
-            print ({"error": f"{e.message}"})
+            print ({"Error updating vms status": f"{e.message}"})
         except VmNotFound as e:
-            print ({"error": f"{e.message}"})
+            print ({"Error updating vms status": f"{e.message}"})
         except ItemNotModified as e:
-            print ({'message': f"{e.message}"})
+            pass
+        except pymongo.errors.ConnectionFailure as e:
+            print ({"Error updating vms status": "Connection to database failed."})
         except Exception as e:
-            print ({"error": f"Error {e}"})
+            print ({"Error updating vms status": f"Error {e}"})
 
 
 
 # ********[UPDATE FIELD IN VAGRANTFILE]********
-
 #Update CPU
 def update_cpu(cpu, vm_name,VM_PATH):
     
@@ -208,21 +200,6 @@ def update_ip(ip, vm_name,VM_PATH):
 
 
 # ********[DICTIONARY LIST VM]********
-#Init interfaces
-def init_int(NET_SERVER,collection):
-
-    ids = collection.find({}, {"_id": 0, "id": 1})
-
-    for item in ids:
-        print("creating interface with id: ", item["id"])
-        url= f"{NET_SERVER}/network/create_int/{item["id"]}"
-        response=requests.post(url,json="")
-        print (response.json())
-
-    return
-    
-
-
 # Create item in vm dictionary
 def create_item_vm_list(vm_name, id, ram, cpu, ip, collection):
 
@@ -262,7 +239,7 @@ def search_item_vm_list(vm_name, field, collection):
 
     item = collection.find_one({"name": vm_name }, {"_id": 0 , f"{field}":1})
     if (not item):
-        raise ItemNotFound (f"Cannot find item for vm {vm_name} with field {field}", error_code=404)
+        raise ItemNotFound (f"Field '{field}' in '{vm_name}' not found.", error_code=404)
     return item[field]
 
 

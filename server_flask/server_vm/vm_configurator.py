@@ -56,8 +56,8 @@ except Exception as e: #[TODO] gestire eccezioni mongo poi
 
 # Restore vm's last state
 try:
-    restore_vm_status(VM_PATH)
-except (VM_listFileNotFound, VmNotFound, VagrantfileNotFound) as e:
+    restore_vm_status(VM_PATH, collection)
+except (VmNotFound, VagrantfileNotFound) as e:
     print (e.message, e.error_code)
 except Exception as e:
     print (f"Error {e}")
@@ -79,10 +79,7 @@ scheduler.add_job(lambda: sync_vm(VM_PATH, collection), trigger=IntervalTrigger(
 def create_vm():
 
     #Generate vm_id
-    try:
-        vm_id = generate_unique_id(VM_PATH)
-    except VM_listFileNotFound as e:
-        return jsonify ({'error': f"VM_list doesn't exists."}), e.error_code
+    vm_id = generate_unique_id(collection)
     
     data = request.json
     vm_name = data.get('name', f'{vm_id}')
@@ -91,7 +88,7 @@ def create_vm():
     vm_ram = data.get ('ram', 1024) #default 1024 MB
     
     try:
-        default_ip = generate_default_ip(VM_PATH, DEFAULT_NETWORK, EXCLUDED_ADDRESSES)
+        default_ip = generate_default_ip(collection, DEFAULT_NETWORK, EXCLUDED_ADDRESSES)
         vm_ip=data.get('ip', f'{default_ip}')
     except DefaultIpNotAvailable as e:
         return jsonify({"error": "Could not obtain default ip. Ip field is needed"}), 400
@@ -99,7 +96,6 @@ def create_vm():
     #Field needed
     if not vm_name:
         return jsonify({"error": "name field is needed"}), 400
-    
       
     try:
         #Create vm directory
@@ -114,7 +110,7 @@ def create_vm():
             print(response.json())
             vm_interface = response.json()["interface"]
         else:
-            return jsonify({'error': f"Request failed with status code: {response.status_code}"})
+            return jsonify({'error': f"Request failed."}), response.status_code
         
         #Creating vagrantfile and save information in vm dictionary
         create_vagrantfile(vm_path, vm_name,vm_box, vm_cpus, vm_ram, vm_ip, vm_interface)
@@ -129,12 +125,10 @@ def create_vm():
 
     except FileExistsError:
         return jsonify({"error": f"VM '{vm_name}' already exist"}), 409
-    except VM_listFileNotFound as e:
-        return jsonify ({'error': f"VM_list doesn't exists."}), e.error_code
     except requests.exceptions.ConnectionError as e:
         return jsonify({'error': 'Network configurator Server not running.'}), 500
     except Exception as e:
-        return jsonify({"error": f"Error creating vm. {e}"})
+        return jsonify({"error": f"Error creating vm. {e}"}), 500
 
 
 
@@ -157,16 +151,14 @@ def delete_vm(vm_name):
             print("Interface deleted successfully!")
             delete_from_dictionary(vm_name,collection)
         else:
-            return jsonify({"error": f"Request failed with status code: {response.status_code}"})
+            return jsonify({"error": f"Request failed."}), response.status_code
 
         #Deleting vm and directory
         v = vagrant.Vagrant(vm_path)
-        v.destroy()
+        #v.destroy()
         shutil.rmtree(vm_path)
         return jsonify({"message": f"VM '{vm_name}' sucessfully deleted!"}), 200
     
-    except VM_listFileNotFound as e:
-        return jsonify ({'error': f"VM_list doesn't exists."}), e.error_code
     except FieldNotValid as e:
         return jsonify ({'error': f"{e.message}"}), e.error_code
     except requests.exceptions.ConnectionError as e:
@@ -176,10 +168,10 @@ def delete_vm(vm_name):
 
 
 @app.route('/vm/list', methods=['GET'])
-def read_vms():
+def list_vms():
 
     try:
-        vmlist = collection.find({} ,{"_id": 0})  # Empty filter to get all documents
+        vmlist = list(collection.find({} ,{"_id": 0}))
         return jsonify(vmlist), 200
 
     except Exception as e:
@@ -220,8 +212,6 @@ def update_vm(vm_name):
 
     except VagrantfileNotFound as e:
         return jsonify({"error": f"{e.message}"}), 404
-    except VM_listFileNotFound as e:
-        return jsonify({"error": f"{e.message}"}), e.error_code
     except FieldNotValid as e:
         return jsonify ({'error': f"{e.message}"}), e.error_code
     except Exception as e:
@@ -244,8 +234,6 @@ def power_start_vm(vm_name):
         update_item_vm_list(vm_name, "status", status[0].state,collection)
         return jsonify({"message": f"VM '{vm_name}' successfully started!"}), 200
     
-    except VM_listFileNotFound as e:
-        return jsonify({"error": f"{e.message}"}), e.error_code
     except FieldNotValid as e:
         return jsonify ({'error': f"{e.message}"}), e.error_code
     except Exception as e:
@@ -268,8 +256,6 @@ def power_stop_vm(vm_name):
         update_item_vm_list(vm_name, "status", status[0].state,collection)
         return jsonify({"message": f"VM '{vm_name}' successfully stopped!"}), 200
     
-    except VM_listFileNotFound as e:
-        return jsonify({"error": f"{e.message}"}), e.error_code
     except FieldNotValid as e:
         return jsonify ({'error': f"{e.message}"}), e.error_code
     except Exception as e:
@@ -292,8 +278,6 @@ def power_vm(vm_name):
         update_item_vm_list(vm_name, "status", status[0].state,collection)
         return jsonify({"message": f"VM '{vm_name}' successfully reloaded!"}), 201
     
-    except VM_listFileNotFound as e:
-        return jsonify({"error": f"{e.message}"}), e.error_code
     except FieldNotValid as e:
         return jsonify ({'error': f"{e.message}"}), e.error_code
     except Exception as e:

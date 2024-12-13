@@ -1,5 +1,5 @@
 from flask import Flask, request
-from exception import *
+from exceptions import *
 import os
 import re
 import random
@@ -120,6 +120,7 @@ def sync_vm(VM_PATH, collection):
         except VmNotFound as e:
             print ({"Error updating vms status": f"{e.message}"})
         except ItemNotModified as e:
+            print ("Nothing to update")
             pass
         except pymongo.errors.ConnectionFailure as e:
             print ({"Error updating vms status": "Connection to database failed."})
@@ -231,7 +232,7 @@ def update_item_vm_list(vm_name, field, value_field, collection):
     if (result.matched_count==0):
         raise VmNotFound (f"Can not find vm '{vm_name}'.", error_code=404)
     if(result.modified_count==0):
-        raise ItemNotModified (f"Field '{field}' in '{vm_name}' not modified.", error_code=400)
+        raise ItemNotModified (f"Field '{field}' in '{vm_name}' not modified.", error_code=200)
     
 
 #Search value of a field in dictionary

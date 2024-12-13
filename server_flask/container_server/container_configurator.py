@@ -1,29 +1,52 @@
-from function_container import *
+from functions import *
+from exceptions import *
+from config import DevelopmentConfig
+
 from flask import Flask, jsonify, request
 import docker
+import requests
 import json
+import pymongo
 from flask_cors import CORS
 
-app = Flask(__name__)
-
+# ********[ LOAD CONFIGURATION FROM config.py ]********
+app = Flask (__name__)
+app.config.from_object(DevelopmentConfig)
 CORS(app,resources={r'/*':{'origins':'*'}})
 
-#Init container list
-try:
-    containerList=init()
-except json.JSONDecodeError as e:
-    print ({'error': f"{e}"}), 400
+DATABASE_CONNECTION = app.config['DATABASE_CONNECTION']
+mongo = pymongo.MongoClient(DATABASE_CONNECTION)
+database = mongo["tinDatabase"] 
+containerCollection= database["containerList"]
+serviceCollection= database["serviceList"]
+
+#Server Address for network configuration 
+VM_SERVER_URL=f"http://{app.config['VM_SERVER_IP']}:{app.config['VM_SERVER_PORT']}"
+
+# #Init container list
+# try:
+#     containerList=init()
+# except json.JSONDecodeError as e:
+#     print ({'error': f"{e}"}), 400
 
 
+# ********[ STARTUP ]********
+
+    
+
+
+
+# ********[ API ]********
 @app.route('/container/create', methods=['POST'])
 def create_container():
     data = request.json
     name = data.get('name')
-    docker_image = data.get('image')
+    service_port = data.get('service_port')
+    # docker_image = data.get('image')
     vm_port = data.get('vm_port')
 
-    if not docker_image:
-        return jsonify({"error": "Image field is needed"}), 400
+    if not service_port:
+        return jsonify({"error": "Service_port field is needed"}), 400
     
     try:
 
@@ -36,6 +59,26 @@ def create_container():
             return jsonify({'error': f'Container port {vm_port} already in use.'}), 400
         
 
+        #search what image to use for the given service
+        result = serviceCollection.find_one(
+            {
+                "port": service_port,
+                "images": {
+                    "$elemMatch": {"enabled": "True"}
+                }
+            },
+            {
+                "images.$": 1,  # Project only the first matching image
+                "_id": 0        # Exclude the '_id' field from the result
+            })
+
+        if not (result and "images" in result):
+            return jsonify({})
+        
+        docker_image = result["images"][0]["name"]
+        print("Image Name:", docker_image)
+
+
         #if name  or vm_port was provided use it , otherwise use docker generated
         if name and vm_port:
             container=client.containers.run(docker_image,name=name,detach=True, ports={"2222/tcp":vm_port})
@@ -45,6 +88,7 @@ def create_container():
             container=client.containers.run(docker_image,detach=True, ports={"2222/tcp":vm_port})
         else:
             container=client.containers.run(docker_image,detach=True, ports={"2222/tcp":None})
+
 
         #refresh to get the assigned port
         container=client.containers.get(container.name)

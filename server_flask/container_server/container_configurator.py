@@ -43,7 +43,6 @@ def create_container():
     name = data.get('name')
     service_port = data.get('service_port')
     # docker_image = data.get('image')
-    vm_port = data.get('vm_port')
 
     if not service_port:
         return jsonify({"error": "Service_port field is needed"}), 400
@@ -51,52 +50,87 @@ def create_container():
     try:
 
         #Check if name already exists
-        if check_if_value_field_exists("name", name):
-            return jsonify({'error': f'Container name {name} already exists.'}), 400
-
-        #Check if port already exists
-        if check_if_value_field_exists("vm_port", vm_port):
-            return jsonify({'error': f'Container port {vm_port} already in use.'}), 400
-        
+        if check_if_value_field_exists("name", name, containerCollection):
+            return jsonify({'error': f'Container name {name} already exists.'}), 400     
 
         #search what image to use for the given service
-        result = serviceCollection.find_one(
-            {
-                "port": service_port,
-                "images": {
-                    "$elemMatch": {"enabled": "True"}
+        pipeline = [
+        {
+            "$match": {
+                "services": {
+                    "$elemMatch": {"service_port": f"{service_port}"}
                 }
-            },
-            {
-                "images.$": 1,  # Project only the first matching image
-                "_id": 0        # Exclude the '_id' field from the result
-            })
-
-        if not (result and "images" in result):
-            return jsonify({})
+            }
+        },
+        {
+            "$unwind": "$services"
+        },
+        {
+            "$match": {
+                "services.service_port": f"{service_port}"
+            }
+        },
+        {
+            "$sort": {"services.priority": 1}  # Sort by priority descending
+        },
+        {
+            "$limit": 1  # Take the top result
+        }
+        ]
         
-        docker_image = result["images"][0]["name"]
-        print("Image Name:", docker_image)
+        result = list(serviceCollection.aggregate(pipeline))
+        if not result:
+            return jsonify({'error': f'No images found with service_port = {service_port}.'}), 404
 
 
-        #if name  or vm_port was provided use it , otherwise use docker generated
-        if name and vm_port:
-            container=client.containers.run(docker_image,name=name,detach=True, ports={"2222/tcp":vm_port})
-        elif name:
-            container=client.containers.run(docker_image,name=name,detach=True, ports={"2222/tcp":None})
-        elif vm_port:
-            container=client.containers.run(docker_image,detach=True, ports={"2222/tcp":vm_port})
+        docker_image=result[0]["image"]
+        container_service_port=result[0]["services"]["container_port"]
+        all_services = serviceCollection.find_one(
+            {"image": docker_image},
+            {"_id": 0, "services": 1}
+        )
+        print(all_services)
+        port_list={}
+        for service in all_services["services"]:
+            port_list[service["container_port"]]=None
+            
+        print(port_list)
+
+        #if name was provided use it , otherwise use docker generated
+        if name:
+            container=client.containers.run(docker_image,name=name,detach=True, ports=port_list)
         else:
-            container=client.containers.run(docker_image,detach=True, ports={"2222/tcp":None})
+            container=client.containers.run(docker_image,detach=True, ports=port_list)
 
-
-        #refresh to get the assigned port
+        # add the dynamically chosen port to the services list, and set the busy state to False
         container=client.containers.get(container.name)
-        vm_port= container.attrs["NetworkSettings"]["Ports"]["2222/tcp"][0]["HostPort"]
+        for container_port in container.attrs["NetworkSettings"]["Ports"]:
+            if(container.attrs["NetworkSettings"]["Ports"][container_port]):
+                for service in all_services["services"]:
+                    if(service["container_port"]==container_port.split("/")[0]):
+                        service["vmport"]=container.attrs["NetworkSettings"]["Ports"][container_port][0]["HostPort"]
+                        service["busy"]="False"
 
-        new_container=create_item_container_list(container, vm_port)
+        print("services: ",all_services)
+        
+        #Add item to collection
+        
+        new_container={
+        "name": container.name,
+        "image": docker_image,
+        "status": container.status,
+        "vm_name": hostname,
+        "services": all_services["services"]
+        }
 
-        return jsonify({"message": f"Container successfully created!","container":new_container}), 201
+        print("--------------------------------------")
+        print(new_container)
+
+        result = containerCollection.insert_one(new_container)
+     
+        
+
+        return jsonify({"message": f"Container successfully created!"}), 201
 
     except ContainerFileNotFound as e:
         return jsonify ({'error': f"{e.message}"}), e.error_code

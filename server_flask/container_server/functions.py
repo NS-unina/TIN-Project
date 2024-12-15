@@ -1,4 +1,4 @@
-from server_flask.vm.container_server.exception_container import *
+from exceptions import *
 import docker
 import json
 import socket
@@ -6,6 +6,47 @@ import socket
 
 client = docker.from_env()
 hostname = socket.gethostname()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 def init():
     containerList={
@@ -26,15 +67,13 @@ def init():
 # Create item in container list
 def create_item_container_list(container, vm_port, containerCollection):
     
-    
+
     new_container={
-        "vm_name": hostname,
         "name": container.name,
         "image": str(container.image),
         "status": container.status,
-        "vm_port": vm_port,
-        "container_port": "2222",
-        "ports":[{"vm_port": vm_port,"container_port": container.port,"service":"ssh"}]
+        "vm_name": hostname,
+        "services":[{"vm_port": vm_port,"container_port": container.port,"service":"ssh"}]
     }
 
 

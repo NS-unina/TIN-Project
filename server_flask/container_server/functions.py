@@ -4,101 +4,57 @@ import json
 import socket
 
 
+
 client = docker.from_env()
 hostname = socket.gethostname()
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-def init():
-    containerList={
-        f"{hostname}": [
+#Search what image to use for the given service
+def search_services (service_port, collection):
+    pipeline = [
+        {
+            "$match": {
+                "services": {
+                    "$elemMatch": {"service_port": f"{service_port}"}
+                }
+            }
+        },
+        {
+            "$unwind": "$services"
+        },
+        {
+            "$match": {
+                "services.service_port": f"{service_port}"
+            }
+        },
+        {
+            "$sort": {"services.priority": 1}  # Sort by priority descending
+        },
+        {
+            "$limit": 1  # Take the top result
+        }
         ]
-    }
     
-    try:
-        with open('Containers.json', 'r') as container_list:
-            containerList = json.load(container_list)
-    except FileNotFoundError:
-        container_list = open('Containers.json','w')
-        container_list.write(json.dumps(containerList, indent=4))
-        container_list.close()
-    print (containerList)
+    return list(collection.aggregate(pipeline))
 
 
-# Create item in container list
-def create_item_container_list(container, vm_port, containerCollection):
-    
+#Create item in the list
+def create_item_list(container, all_services, containerCollection):
 
     new_container={
         "name": container.name,
         "image": str(container.image),
         "status": container.status,
         "vm_name": hostname,
-        "services":[{"vm_port": vm_port,"container_port": container.port,"service":"ssh"}]
+        "services": all_services["services"]
     }
 
+    result = containerCollection.insert_one(new_container)
+    if (not result):
+        raise FailedInsertion(f"Insert of container {container.name} failed", error_code=500)
 
-    test={
-  "name":"cowrie",
-  "image":"cowrie/cowrie",
-  "enabled":"True",
-  "services":[{"name":"ssh","port":"22","container_port":"2222"},{"name":"telnet","port":"22","container_port":"3333"}]
-}
-    # try:
-    #     with open('Containers.json', 'r') as container_list:
-    #         containerList = json.load(container_list)
-    # except FileNotFoundError:
-    #     raise ContainerFileNotFound ("Container file not found.", error_code=404)
-
-   
-
-    # containerList[f"{hostname}"].append(new_container)
-    # print (containerList)
-    
-    # with open('Containers.json', 'w') as container_list:
-    #         container_list.write(json.dumps(containerList, indent=4))
-
-    # return new_container
-
+    new_container.pop("_id", None)
+    return new_container 
 
 
 #Search if value exists
@@ -109,53 +65,24 @@ def check_if_value_field_exists(field, value, collection):
         return False
     return True
 
-    # try:
-    #     with open('Containers.json', 'r') as container_list:
-    #         containerList = json.load(container_list)
-    # except FileNotFoundError:
-    #     raise ContainerFileNotFound ("Container file not found.", error_code=404)
 
-    # for entry in containerList.get(f"{hostname}", []):
-    #     if entry.get(f"{field}") == value:
-    #         return True
-    # return False   
+#Delete from db
+def delete_from_db(container_name,containerCollection):
+
+    result = containerCollection.delete_one({"name": container_name})
+    if (result.deleted_count==0):
+        raise ItemNotFound (f"Cannot delete vm {container_name} ", error_code=400) 
 
 
-def update_container_field (container_name, field, value):
-    try:
-        with open('Containers.json', 'r') as container_list:
-            containerList = json.load(container_list)
-    except FileNotFoundError:
-        raise ContainerFileNotFound ("Container file not found.", error_code=404)
+#Update field in list
+def update_item_list(container_name, field, value_field, collection):
 
-    for entry in containerList.get(f"{hostname}", []):
-        if entry.get(f"name") == container_name:
-            entry[f"{field}"] = value
-    print(containerList)
-
-    with open('Containers.json', 'w') as container_list:
-        container_list.write(json.dumps(containerList, indent=4))
+    result = collection.update_one(
+        {"vm_name": hostname, "name": container_name},            
+        {"$set": {field: value_field}}
+        )
     
-
-#Delete from dictionary
-def delete_from_dictionary(container_name):
-    try:
-        with open('Containers.json', 'r') as container_list:
-            containerList = json.load(container_list)
-    except FileNotFoundError:
-        raise ContainerFileNotFound ("Container file not found.", error_code=404)
-
-    containerList[f"{hostname}"] = [entry for entry in containerList.get(f"{hostname}", []) if entry.get("name") != container_name]
-    
-    with open('Containers.json', 'w') as container_list:
-        container_list.write(json.dumps(containerList, indent=4))
-
-
-def get_all_container():
-    try:
-        with open('Containers.json', 'r') as container_list:
-            containerList = json.load(container_list)
-    except FileNotFoundError:
-        raise ContainerFileNotFound ("Container file not found.", error_code=404)
-    
-    return containerList
+    if (result.matched_count==0):
+        raise ContainerNotFound (f"Can not find container '{container_name}'.", error_code=404)
+    if(result.modified_count==0):
+        raise ItemNotModified (f"Field '{field}' not modified.", error_code=200)

@@ -164,15 +164,14 @@ def delete_vm(vm_name):
         #Delete network interfaces for the VM
         url= f"{NET_SERVER_URL}/network/delete_int/{vm_id}"
         response=requests.delete(url)
-        if (response.status_code == 200):
-            print(f"Interface deleted successfully!. Response: {response.json()}")
-            delete_from_dictionary(vm_name,collection)
-        else:
+        if (response.status_code != 200):
             return jsonify({"error": f"Request failed. Response: {response.json()}"}), response.status_code
-
+        print(f"Interface deleted successfully!. Response: {response.json()}")
+        
         #Deleting vm and directory
         v = vagrant.Vagrant(vm_path)
         #v.destroy()
+        delete_from_dictionary(vm_name,collection)
         rmtree(vm_path)
         return jsonify({"message": f"VM '{vm_name}' sucessfully deleted!"}), 200
     

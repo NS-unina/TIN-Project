@@ -23,12 +23,6 @@ serviceCollection= database["serviceList"]
 #Server Address for network configuration 
 VM_SERVER_URL=f"http://{app.config['VM_SERVER_IP']}:{app.config['VM_SERVER_PORT']}"
 
-# #Init container list
-# try:
-#     containerList=init()
-# except json.JSONDecodeError as e:
-#     print ({'error': f"{e}"}), 400
-
 
 # ********[ STARTUP ]********
 
@@ -47,55 +41,24 @@ def create_container():
     if not service_port:
         return jsonify({"error": "Service_port field is needed"}), 400
     
-    try:
+    #Check if name already exists
+    if check_if_value_field_exists("name", name, containerCollection):
+        return jsonify({'error': f'Container name {name} already exists.'}), 400  
 
-        #Check if name already exists
-        if check_if_value_field_exists("name", name, containerCollection):
-            return jsonify({'error': f'Container name {name} already exists.'}), 400     
+    try:   
 
-        #search what image to use for the given service
-        pipeline = [
-        {
-            "$match": {
-                "services": {
-                    "$elemMatch": {"service_port": f"{service_port}"}
-                }
-            }
-        },
-        {
-            "$unwind": "$services"
-        },
-        {
-            "$match": {
-                "services.service_port": f"{service_port}"
-            }
-        },
-        {
-            "$sort": {"services.priority": 1}  # Sort by priority descending
-        },
-        {
-            "$limit": 1  # Take the top result
-        }
-        ]
-        
-        result = list(serviceCollection.aggregate(pipeline))
+        #Search what image to use for the given service
+        result = search_services (service_port, serviceCollection)
         if not result:
             return jsonify({'error': f'No images found with service_port = {service_port}.'}), 404
-
-
+        
+        #Select docker images
         docker_image=result[0]["image"]
-        container_service_port=result[0]["services"]["container_port"]
-        all_services = serviceCollection.find_one(
-            {"image": docker_image},
-            {"_id": 0, "services": 1}
-        )
-        print(all_services)
+        all_services = serviceCollection.find_one({"image": docker_image}, {"_id": 0, "services": 1})
         port_list={}
         for service in all_services["services"]:
             port_list[service["container_port"]]=None
             
-        print(port_list)
-
         #if name was provided use it , otherwise use docker generated
         if name:
             container=client.containers.run(docker_image,name=name,detach=True, ports=port_list)
@@ -110,32 +73,18 @@ def create_container():
                     if(service["container_port"]==container_port.split("/")[0]):
                         service["vmport"]=container.attrs["NetworkSettings"]["Ports"][container_port][0]["HostPort"]
                         service["busy"]="False"
-
-        print("services: ",all_services)
         
         #Add item to collection
-        
-        new_container={
-        "name": container.name,
-        "image": docker_image,
-        "status": container.status,
-        "vm_name": hostname,
-        "services": all_services["services"]
-        }
+        container=create_item_list(container, all_services, containerCollection)
 
-        print("--------------------------------------")
-        print(new_container)
+        return jsonify({"message": f"Container successfully created!","container":container}), 201
 
-        result = containerCollection.insert_one(new_container)
-     
-        
-
-        return jsonify({"message": f"Container successfully created!"}), 201
-
-    except ContainerFileNotFound as e:
-        return jsonify ({'error': f"{e.message}"}), e.error_code
+    except FailedInsertion as e:
+        return jsonify ({'error': f"{e.message}"}), 500
+    except pymongo.errors.ConnectionFailure as e:
+        return jsonify({'error': 'Connection to database failed.'}), 500
     except docker.errors.APIError as e:
-        return jsonify({'error': f'{e}'})
+        return jsonify({'error': f'{e}'}), 500
         
         
 
@@ -144,76 +93,139 @@ def delete_container(container_name):
 
     try:
         #Check if name already exists
-        if not check_if_value_field_exists("name", container_name):
+        if not check_if_value_field_exists("name", container_name, containerCollection):
             return jsonify({'error': f"Container name {container_name} doesn't exists."})
 
         #delete container
         container = client.containers.get(container_name)
         container.stop()  
         container.remove()
-        delete_from_dictionary(container_name)
+        delete_from_db(container_name,containerCollection)
 
         return jsonify({"message": f"Container '{container_name}' successfully deleted!"}), 200
     
-    except ContainerFileNotFound as e:
+    except ItemNotFound as e:
         return jsonify ({'error': f"{e.message}"}), e.error_code
+    except pymongo.errors.ConnectionFailure as e:
+        return jsonify({'error': 'Connection to database failed.'}), 500
     except docker.errors.NotFound:
         return jsonify({'Container not found': f'{container_name}'}), 404
     
-
-         
+     
+     
 @app.route('/container/list', methods=['GET'])
 def read_container():
+ 
     try:
-        containerList= get_all_container() 
-        return jsonify(containerList), 200
+        containerlist = list(containerCollection.find({} ,{"_id": 0}))
+        return jsonify(containerlist), 200
+       
+    except pymongo.errors.ConnectionFailure as e:
+        return jsonify({'error': 'Connection to database failed.'}), 500
+    except Exception as e:
+        return jsonify({"error": f"Error in reading container list. {e}"}), 500
     
-    except ContainerFileNotFound as e:
-        return jsonify ({'error': f"{e.message}"}), e.error_code
 
+#get container by service -returns the top priority container with the specified service
+@app.route('/container/<service_port>')
+def get_container_by_service(service_port):
+    try:
+        container = search_services (service_port, containerCollection)
+        
+        container[0].pop("_id",None)
+        return jsonify(container[0]), 200
 
+    except pymongo.errors.ConnectionFailure as e:
+        return jsonify({'error': 'Connection to database failed.'}), 500
+    except Exception as e:
+        return jsonify({"error": f"Error in reading container list. {e}"}), 500
+    
 
 @app.route('/container/start/<container_name>', methods=['POST'])
 def start_container(container_name):
 
     #Check if container exists
+    if not check_if_value_field_exists("name", container_name, containerCollection):
+            return jsonify({'error': f"Container name {container_name} doesn't exists."})
+    
     try: 
         container = client.containers.get(container_name)
         container.start()
-        update_container_field (container_name, "status", "running")
+
+        #refresh status
+        container = client.containers.get(container_name)
+        update_item_list (container_name, "status", container.status, containerCollection)
         return jsonify({'Container started successfully.': f'{container_name}'}), 200
     
-    except ContainerFileNotFound as e:
-        return jsonify ({'error': f"{e.message}"}), e.error_code
-    except docker.errors.NotFound:
-        return jsonify({'Container not found': f'{container_name}'}), 404
+    except (ContainerNotFound, docker.errors.NotFound) as e:
+        return jsonify ({'error': f'Container {container_name} not found'}), 404
+    except ItemNotModified as e:
+        return jsonify ({'message': f"{e.message}"}), 200
+    except pymongo.errors.ConnectionFailure as e:
+        return jsonify({'error': 'Connection to database failed.'}), 500
+    except Exception as e:
+        return jsonify({"error": f"Error in reading container list. {e}"}), 500
 
     
 
 @app.route('/container/stop/<container_name>', methods=['POST'])
 def stop_container(container_name):
     
+    #Check if container exists
+    if not check_if_value_field_exists("name", container_name):
+            return jsonify({'error': f"Container name {container_name} doesn't exists."})
+    
     try: 
         container = client.containers.get(container_name)
         container.stop()
-        update_container_field (container_name, "status", "exited")
-        return jsonify({'Container stopped': f'{container_name}'}), 200
+        
+        #refresh status
+        container = client.containers.get(container_name)
+        update_item_list (container_name, "status", container.status, containerCollection)
+        return jsonify({'Container started successfully.': f'{container_name}'}), 200
+    
+    except (ContainerNotFound, docker.errors.NotFound) as e:
+        return jsonify ({'error': f'Container {container_name} not found'}), 404
+    except ItemNotModified as e:
+        return jsonify ({'message': f"{e.message}"}), 200
+    except pymongo.errors.ConnectionFailure as e:
+        return jsonify({'error': 'Connection to database failed.'}), 500
+    except Exception as e:
+        return jsonify({"error": f"Error in reading container list. {e}"}), 500
+    
 
-    except ContainerFileNotFound as e:
-        return jsonify ({'error': f"{e.message}"}), e.error_code
-    except docker.errors.NotFound:
-        return jsonify({'Container not found': f'{container_name}'}), 404
+#returns the number of containers in each vm 
+@app.route('/container/count', methods=['GET'])
+def container_number():
+    try:
+
+        pipeline = [
+        {
+            "$group": {
+                "_id": "$vm_name",  # Group by the 'vm_name' field
+                "number_of_containers": {"$sum": 1}  # Count the number of documents per vm_name
+            }
+        },
+        {
+            "$project": {
+                "_id": 0,  # Exclude the default '_id' field
+                "vm_name": "$_id",
+                "number_of_containers": 1
+            }
+        }
+        ]
+        result = list(containerCollection.aggregate(pipeline))
+        result_dict = {item["vm_name"]: item["number_of_containers"] for item in result}
+
+        return jsonify(result_dict), 200
+
+    except Exception as e:
+        return jsonify({"error": f"Error in reading container list. {e}"}), 500
     
 
 @app.route('/container/ping', methods=['GET'])
 def ping():
     return jsonify("server running"), 200
-
-
-@app.route('/container/count', methods=['GET'])
-def container_number():
-    containerList = get_all_container()
-    return jsonify({sum(len(containers) for containers in containerList.values())}), 200
 
     
 if __name__ == '__main__':

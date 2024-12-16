@@ -71,7 +71,7 @@ def create_container():
             if(container.attrs["NetworkSettings"]["Ports"][container_port]):
                 for service in all_services["services"]:
                     if(service["container_port"]==container_port.split("/")[0]):
-                        service["vmport"]=container.attrs["NetworkSettings"]["Ports"][container_port][0]["HostPort"]
+                        service["vm_port"]=container.attrs["NetworkSettings"]["Ports"][container_port][0]["HostPort"]
                         service["busy"]="False"
         
         #Add item to collection
@@ -199,22 +199,7 @@ def stop_container(container_name):
 def container_number():
     try:
 
-        pipeline = [
-        {
-            "$group": {
-                "_id": "$vm_name",  # Group by the 'vm_name' field
-                "number_of_containers": {"$sum": 1}  # Count the number of documents per vm_name
-            }
-        },
-        {
-            "$project": {
-                "_id": 0,  # Exclude the default '_id' field
-                "vm_name": "$_id",
-                "number_of_containers": 1
-            }
-        }
-        ]
-        result = list(containerCollection.aggregate(pipeline))
+        result = count_container(containerCollection)
         result_dict = {item["vm_name"]: item["number_of_containers"] for item in result}
 
         return jsonify(result_dict), 200

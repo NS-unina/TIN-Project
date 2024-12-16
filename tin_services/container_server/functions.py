@@ -1,6 +1,5 @@
 from exceptions import *
 import docker
-import json
 import socket
 
 
@@ -86,3 +85,24 @@ def update_item_list(container_name, field, value_field, collection):
         raise ContainerNotFound (f"Can not find container '{container_name}'.", error_code=404)
     if(result.modified_count==0):
         raise ItemNotModified (f"Field '{field}' not modified.", error_code=200)
+
+#Count container on vm
+def count_container(containerCollection):
+    pipeline = [
+        {
+            "$group": {
+                "_id": "$vm_name",  # Group by the 'vm_name' field
+                "number_of_containers": {"$sum": 1}  # Count the number of documents per vm_name
+            }
+        },
+        {
+            "$project": {
+                "_id": 0,  # Exclude the default '_id' field
+                "vm_name": "$_id",
+                "number_of_containers": 1
+            }
+        }
+        ]
+    
+    return list(containerCollection.aggregate(pipeline))
+        

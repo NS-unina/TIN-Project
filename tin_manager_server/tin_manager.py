@@ -7,6 +7,7 @@ import json
 from flask_swagger_ui import get_swaggerui_blueprint
 
 
+# ********[ LOAD CONFIGURATION FROM config.py ]********
 app = Flask (__name__)
 app.config.from_object(DevelopmentConfig)  # Load the configuration
 
@@ -18,94 +19,18 @@ CONTAINER_SERVER_PORT=app.config['CONTAINER_SERVER_PORT']
 
 MAX_CONTAINERS=app.config['MAX_CONTAINERS']
 
-# Init
-try:
-    #Obtain services list
-    services_list = get_services_list(VM_SERVER_URL)
-    print (services_list)
-
-    #Obtain vm list
-    # vms_list = get_vm_list(VM_SERVER, PORT_CONTAINER_SERVER)
-    # print (vms_list)
-    vms_list= {'vms': []}
-    print (vms_list)
-    
-    #Obtain honeyfarm list
-    
-    HoneyfarmList = {
-    "ssh": [
-      {
-        "container_name": "corwrie",
-        "ip": "10.10.10.11",
-        "port": "4442",
-        "rtt": "10ms",
-        "status": "running",
-        "busy":"True"
-      },
-      {
-        "container_name": "corwrie",
-        "ip": "10.10.10.10",
-        "port": "4444",
-        "rtt": "10ms",
-        "status": "exited",
-        "busy":"True"
-
-      },
-      {
-        "container_name": "corwrie",
-        "ip": "10.10.10.10",
-        "port": "4445",
-        "rtt": "10ms",
-        "status": "running",
-        "busy":"True"
-
-      }
-    ],
-    "telnet": []
-    }
-    print (HoneyfarmList)
-    
-
-except ServiceListError as e:
-    print (f"Error: {e.message}")
-except VmListError as e:
-    print (f"Error: {e.message}")
-except VMServerNotRunning as e:
-    print (f"Error: {e.message}")
-except ContainerServerNotRunning as e:
-    print (f"Error: {e.message}")
-except Exception as e:
-    print (f"Error: {e}")
 
 
 
 
-#WEBHOOKS for vm and container updates
-
-@app.route('/tinmanager/vmwebhook', methods=['POST'])
-def vm_webhook():
-    data = request.json
-    print (data)
-    
-
-
-@app.route('/tinmanager/containerwebhook', methods=['POST'])
-def container_webhook():
-    data = request.json
-    print(data)
-
-
-
-
-
-
-
+# ********[ API ]********
 @app.route('/tinmanager/addflow', methods=['POST'])
 def add_flow():
     data = request.json
     src_ip = data.get('src_ip')
     dst_ip = data.get('dst_ip')
-    port = data.get('port')
+    src_port = data.get('src_port')
+    dst_port = data.get('dst_port')
     ovs_id=data.get('ovs_id')
 
     #check fields
@@ -119,35 +44,86 @@ def add_flow():
     #     return jsonify({"error": "ovs_id field is needed"}), 400
     
 
-    #Association service -> port
-    service = services_list.get(port)
-    if (service == None): 
-        service="default"
-    print ("service: ",service)
 
     try:
+        #Get vmList
+        vmList = get_vm_list(VM_SERVER_URL)
+        print(vmList)
 
-        honeypot=get_available_container(service,HoneyfarmList)
+        #Get containerList by service_port
+        ip_container_master = vmList[0]["ip"]
+        print (ip_container_master)
+        containerList = get_container_list_by_service (f"http://{ip_container_master}:{CONTAINER_SERVER_PORT}", dst_port)
+        print (containerList)
+
+        #Check if there is a honeypot available
+        if containerList["services"]["busy"] == False:
+            flow_port = containerList["services"]["vm_port"]
+            flow_ip = get_vm_ip_by_name (containerList["vm_name"], vmList)
+        else:
+            #Find if there is available vm
+            containerCount = get_container_count(f"http://{ip_container_master}:{CONTAINER_SERVER_PORT}")
+            for item in containerCount:
+                if item[value] < MAX_CONTAINERS:
+                    #scegli
+                    pass
+
+    except (VmListError, ContainerListError) as e:
+        return jsonify({'error': f'{e.message}'}), 500
+    except ServerNotRunning as e:
+        return jsonify({'error': f'{e.message}'}), 500
+
+
+
         
-        if (not honeypot):
-            honeyfarm=get_available_vm(vms_list,MAX_CONTAINERS)
+        #if non trovato 
+        #
+        #   ottieni la lista di vmList -> /vm/list
+        #   ottieni n container per vm -> /container/count , se disponibile memorizza ip
 
-            if (not honeyfarm):
-                print ("VM not found. Creating vm..")
-                honeyfarm=create_vm(VM_SERVER_URL)          
-                     
-            print("chosen vm:", honeyfarm["ip"])
-
-            honeypot=create_container(honeyfarm["ip"],image) #image devo sceglierla in base al servizio 
-        
-        print ("chosen honeypot: ",honeypot["ip"],honeypot["port"])
-
-        #create_flow(....,honeypot["ip"],"honeypot["port"]")
-
-        return jsonify({"message":  "Flow successfully created!"}), 201
+        #   if not vm disponibile
+        #     crea_vm -> /vm/create (memorizzati l'ip della vm)
+        #   
+        #   crea container -> /container/create (passare service_port, ti deve prendere porta flow)  -    
+        # 
+        #      
     
-    except Exception as e:
-        return jsonify({'error': f'Error {e}'}), 500
+
+
+
+
+
+
+
+
+
+
+
+
+
+    # try:
+
+    #     honeypot=get_available_container(service,HoneyfarmList)
+        
+    #     if (not honeypot):
+    #         honeyfarm=get_available_vm(vms_list,MAX_CONTAINERS)
+
+    #         if (not honeyfarm):
+    #             print ("VM not found. Creating vm..")
+    #             honeyfarm=create_vm(VM_SERVER_URL)          
+                     
+    #         print("chosen vm:", honeyfarm["ip"])
+
+    #         honeypot=create_container(honeyfarm["ip"],image) #image devo sceglierla in base al servizio 
+        
+    #     print ("chosen honeypot: ",honeypot["ip"],honeypot["port"])
+
+    #     #create_flow(....,honeypot["ip"],"honeypot["port"]")
+
+    #     return jsonify({"message":  "Flow successfully created!"}), 201
+    
+    # except Exception as e:
+    #     return jsonify({'error': f'Error {e}'}), 500
 
  
 

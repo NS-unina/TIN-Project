@@ -6,39 +6,100 @@ import json
 
 
 
-def get_services_list(VM_SERVER_URL):
+def get_vm_list (VM_SERVER_URL):
+ 
+  try:
+      #Request to vm_configurator
+      url= f"{VM_SERVER_URL}/vm/list"
+      response=requests.get(url)
+      if (response.status_code == 200):
+          vms_list = response.json()
+          return vms_list
+      else:
+          raise VmListError ("Vm list not obtained.", error_code=response.status_code)
+  except requests.exceptions.ConnectionError:
+      raise ServerNotRunning ("VM Server not running. Can not configure vms list.", error_code=503)
+  
 
-    try:
-        url= f"{VM_SERVER_URL}/vm/services"
-        response=requests.get(url)
-        if (response.status_code == 200):
-            services = response.json()
-            return services
-        else:
-            raise ServiceListError ("Service list not obtained.", error_code=response.status_code)
-    except requests.exceptions.ConnectionError:
-        raise VMServerNotRunning ("VM Server not running. Can not configure services list.", error_code=503)
+def get_container_list_by_service (CONTAINER_SERVER_URL, service_port):
+ 
+  try:
+      #Request to vm_configurator
+      url= f"{CONTAINER_SERVER_URL}/container/{service_port}"
+      response=requests.get(url)
+      if (response.status_code == 200):
+          containerList = response.json()
+          return containerList
+      else:
+          raise ContainerListError ("Container list not obtained.", error_code=response.status_code)
+  except requests.exceptions.ConnectionError:
+      raise ServerNotRunning ("Container Server not running. Can not configure container list.", error_code=503)
 
 
-def get_vm_list (VM_SERVER_URL, CONTAINER_SERVER_PORT):
-
-    vms_list = {"vms": []}
+def get_vm_ip_by_name (vm_name, vmList):
+    for item in vmList:
+        if item["name"] == vm_name:
+            return item["ip"]
     
-    try:
-        #Request to vm_configurator
-        url= f"{VM_SERVER_URL}/vm/list"
-        response=requests.get(url)
-        if (response.status_code == 200):
-            server_vms_list = response.json()
-        else:
-            raise VmListError ("Vm list not obtained.", error_code=response.status_code)
-    except requests.exceptions.ConnectionError:
-        raise VMServerNotRunning ("VM Server not running. Can not configure vms list.", error_code=503)
+
+def get_container_count(CONTAINER_SERVER_URL):
+  try:
+      #Request to vm_configurator
+      url= f"{CONTAINER_SERVER_URL}/container/count"
+      response=requests.get(url)
+      if (response.status_code == 200):
+          containerCount = response.json()
+          return containerCount
+      else:
+          raise ContainerListError ("Container count not obtained.", error_code=response.status_code)
+  except requests.exceptions.ConnectionError:
+      raise ServerNotRunning ("Container Server not running. Can not configure container list.", error_code=503)
+
+
+
+
+
+
+
+
+
+
+
+def create_vm(VM_SERVER_URL):
+  try:
+    url= f"{VM_SERVER_URL}/vm/create"
+    print (url)
+    
+    #payload=json.dumps({"":f"{}"})
+    response=requests.post(url,json={}) #per ora manda vuoto quindi usa tutti i valori di default
+    if (response.status_code == 201):
+        print("Vm created successfully!")
+        return response.json()["vm"]
+    else:
+      raise CreateVmFailed (f"{response.json}", error_code=response.status_code)
+    
+  except requests.exceptions.ConnectionError:
+    raise ServerNotRunning ("VM Server not running. Can not configure vms list.", error_code=503)
+
+
+
+def create_container(vm_ip,vm_port,image): 
+
+    url= f"http://{vm_ip}:{vm_port}/container/create"
+    
+    payload=json.dumps({"image":f"{image}"})
+    response=requests.post(url,json=payload)
+    if (response.status_code == 201):
+        print("Container created successfully!")
+        print(response.json()["container"])
+        return response.json()["container"]
+    else:
+        raise CreateContainerFailed (f"{response.json}", error_code=response.status_code)
     
 
-    for vm in server_vms_list.get("vms", []):
-            ip = vm.get("ip")
-            
+
+
+def SUS (CONTAINER_SERVER):          
             # try:
                 # #Request to container_configurator
                 # CONTAINER_SERVER = f"http://{ip}:{CONTAINER_SERVER_PORT}" 
@@ -51,17 +112,7 @@ def get_vm_list (VM_SERVER_URL, CONTAINER_SERVER_PORT):
             # except requests.exceptions.ConnectionError:
             #     raise ContainerServerNotRunning ("Container Server not running. Can not configure contaniers list.", error_code=503)
 
-            # Add information to vm_list
-            new_vm_entry = {
-                "name": vm.get("name"),
-                "ip": vm.get("ip"),
-                "status": vm.get("status"),
-                "n_container": "3" #n_container
-            }
-            ##########
-            vms_list["vms"].append(new_vm_entry)
-        
-    return vms_list
+      
 
 
 def get_honeyfarm_list (VM_SERVER, CONTAINER_SERVER_PORT):
@@ -152,33 +203,9 @@ def get_available_vm(vms_list,MAX_CONTAINERS):
 
 
 
-def create_container(vm_ip,vm_port,image): 
-
-    url= f"http://{vm_ip}:{vm_port}/container/create"
-    
-    payload=json.dumps({"image":f"{image}"})
-    response=requests.post(url,json=payload)
-    if (response.status_code == 201):
-        print("Container created successfully!")
-        print(response.json()["container"])
-        
-        return response.json()["container"]
-    else:
-        raise CreateContainerFailed (f"{response.json}", error_code=response.status_code)
 
 
-def create_vm(VM_SERVER_URL):
 
-    url= f"{VM_SERVER_URL}/vm/create"
-    print (url)
-    
-    #payload=json.dumps({"":f"{}"})
-    response=requests.post(url,json={}) #per ora manda vuoto quindi usa tutti i valori di default
-    if (response.status_code == 201):
-        print("Vm created successfully!")
-        return response.json()["vm"]
-    else:
-        raise CreateContainerFailed (f"{response.json}", error_code=response.status_code)
 
 
 

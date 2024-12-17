@@ -2,12 +2,10 @@
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,vue,flask,vagrant,vuejs
 
 ### ###
-server_flask/vm/*/
+tin_services/vm/*/
 *.cfg
 include/
 share/
-server_flask/vm/VM_list.json
-server_flask/vm/Containers.json
 
 ### Flask ###
 instance/*

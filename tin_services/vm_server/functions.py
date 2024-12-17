@@ -20,7 +20,7 @@ def init_int(NET_SERVER,collection):
     return
 
 #Vagrantfile creation
-def create_vagrantfile(vagrantfile_path,name,box,cpus,ram,ip,tap):
+def create_vagrantfile(vagrantfile_path,name,box,cpus,ram,ip,interface):
     
     vagrantfile_content= f"""
     Vagrant.configure("2") do |config|
@@ -34,13 +34,14 @@ def create_vagrantfile(vagrantfile_path,name,box,cpus,ram,ip,tap):
     
         config.vm.provision "shell", path: "../init_vm.sh"
         config.vm.provision "docker"
-        config.vm.provision "file", source: "../container_configurator.py", destination: "app.py"
-        config.vm.provision "file", source: "../function_container.py", destination: "function_container.py"
-        config.vm.provision "file", source: "../exception_container.py", destination: "exception_container.py"
+        config.vm.provision "file", source: "../../container_server/container_configurator.py", destination: "app.py"
+        config.vm.provision "file", source: "../../container_server/functions.py", destination: "functions.py"
+        config.vm.provision "file", source: "../../container_server/exceptions.py", destination: "exceptions.py"
+        config.vm.provision "file", source: "../../container_server/config.py", destination: "config.py"
 
         #network configuration
-        config.vm.network :forwarded_port, guest: 5002, host: 5002, id: "container_server"
-        config.vm.network "public_network", bridge: "{tap}", ip: "{ip}"
+        #config.vm.network :forwarded_port, guest: 5002, host: 5002, id: "container_server"
+        config.vm.network "public_network", bridge: "{interface}", ip: "{ip}"
 
     end
     """

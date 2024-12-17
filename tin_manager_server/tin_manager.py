@@ -57,17 +57,42 @@ def add_flow():
         print (containerList)
 
         #Check if there is a honeypot available
-        if containerList["services"]["busy"] == False:
-            flow_port = containerList["services"]["vm_port"]
+        if containerList["services"]["busy"] == "False":
+            print("found free container")
+            flow_port = containerList["services"]["vm_port"] 
             flow_ip = get_vm_ip_by_name (containerList["vm_name"], vmList)
+
+            print ("flow ip and port: ",flow_ip,flow_port)
         else:
             #Find if there is available vm
             containerCount = get_container_count(f"http://{ip_container_master}:{CONTAINER_SERVER_PORT}")
-            for item in containerCount:
-                if item[value] < MAX_CONTAINERS:
-                    #scegli
-                    pass
+            print (containerCount)
+            chosen_vm=None
+            for vm in containerCount:
+                if (containerCount[vm]<MAX_CONTAINERS):
+                    print("found vm")
+                    for item in vmList:
+                        if (item["name"]==vm):
+                            chosen_vm=item
+                            print("chosen vm:",chosen_vm)
+                            break
+                    break          
+            if (not chosen_vm):
+                print ("creating vm")
+                #chosen_vm=create_vm(VM_SERVER_URL)
+            
+            print (chosen_vm)
+            #new_container=create_container(chosen_vm["ip"], vm_port?,dst_port )
+            #flow_port = new_container["services"]["vm_port"] 
+            #flow_ip = chosen_vm["ip"]
 
+
+                    
+            #print ("chosen honeypot: ",honeypot["ip"],honeypot["port"])
+
+            #create_flow(....,flow_ip,flow_port)
+
+        return jsonify({"message":  "Flow successfully created!"}), 201
     except (VmListError, ContainerListError) as e:
         return jsonify({'error': f'{e.message}'}), 500
     except ServerNotRunning as e:
@@ -199,4 +224,4 @@ def serve_swagger_file():
     return send_from_directory('.', API_DOCS_PATH)
 
 if __name__ == '__main__':
-    app.run(port=5003)
+    app.run(host=app.config['IP_ADDRESS'], port=app.config['PORT'])

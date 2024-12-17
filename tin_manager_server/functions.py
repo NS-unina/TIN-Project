@@ -37,9 +37,9 @@ def get_container_list_by_service (CONTAINER_SERVER_URL, service_port):
 
 
 def get_vm_ip_by_name (vm_name, vmList):
-    for item in vmList:
-        if item["name"] == vm_name:
-            return item["ip"]
+    for vm in vmList:
+        if vm["name"] == vm_name:
+            return vm["ip"]
     
 
 def get_container_count(CONTAINER_SERVER_URL):
@@ -83,7 +83,7 @@ def create_vm(VM_SERVER_URL):
 
 
 
-def create_container(vm_ip,vm_port,image): 
+def create_container(vm_ip,vm_port,service_port): 
 
     url= f"http://{vm_ip}:{vm_port}/container/create"
     
@@ -96,62 +96,7 @@ def create_container(vm_ip,vm_port,image):
     else:
         raise CreateContainerFailed (f"{response.json}", error_code=response.status_code)
     
-
-
-
-def SUS (CONTAINER_SERVER):          
-            # try:
-                # #Request to container_configurator
-                # CONTAINER_SERVER = f"http://{ip}:{CONTAINER_SERVER_PORT}" 
-                # url = f"{CONTAINER_SERVER}/container/count"
-                # response = requests.get(url)
-                # if (response.status_code == 200):
-                #     n_container = response.json()
-                # else:
-                #     raise VmListError ("Vm list not obtained.", error_code=response.status_code)
-            # except requests.exceptions.ConnectionError:
-            #     raise ContainerServerNotRunning ("Container Server not running. Can not configure contaniers list.", error_code=503)
-
-      
-
-
-def get_honeyfarm_list (VM_SERVER, CONTAINER_SERVER_PORT):
-    HoneyfarmList={
-        "honeyfarm": [
-        ]
-    }
-
-    #[TODO] Ottenere il json:
-    # {
-    #   "containers": [
-    #     {
-    #       "ssh": [
-    #         {
-    #           "container_name": "corwrie",
-    #           "ip": "10.10.10.10",
-    #           "port": "4444",
-    #           "rtt": "10ms",
-    #           "status":"running"
-    #           "busy":True
-    #         },
-    #         {
-    #           "container_name": "corwrie",
-    #           "ip": "10.10.10.11",
-    #           "port": "4444",
-    #           "rtt": "10ms",
-    #           "status": "occupied"
-    #         }
-    #       ]
-    #     },
-    #     {
-    #       "telnet": []
-    #     }
-    #   ]
-    # }
-
-    #Opzione 1: chiedere al vm configurator la lista degli ip per poi fare le richieste ai container cnfigurator per le info
-    #Opzione 2: prendere gli ip dalla lista delle vm che ha già il tin manager
-        
+   
 
 
 #Find available container
@@ -210,53 +155,63 @@ def get_available_vm(vms_list,MAX_CONTAINERS):
 
 
 def create_flow(ovs_id,src_ip,dst_ip,dst_port,container_ip,container_port):
+        
     
+
 
     #ricordare di fare 2 flow (andata e ritorno) e l'elenco dei flow creati
     #cancellazione basata su lastseen di onos che fa partire pure la cancellazione dei container
 
-    payload=f"""{
-  "priority": 40000,
-  "timeout": 0,
-  "isPermanent": true,
-  "deviceId": ovs_id,
-  "treatment": {
-    "instructions": [
-      {
-        "type": "OUTPUT",
-        "port": "NORMAL"
-      },
-      {
-        "type":"L3MODIFICATION",
-        "subtype":"IPV4_DST",
-        "ip":container_ip
+    flow1=f"""{
+    "priority": 40000,
+    "timeout": 0,
+    "isPermanent": true,
+    "deviceId": ovs_id,
+    "treatment": {
+      "instructions": [
+        {
+          "type": "OUTPUT",
+          "port": "NORMAL"
         },
-            
-      {
-        "type":"L4MODIFICATION",
-        "subtype":"TCP_SRC",
-        "tcpPort":container_port
-      }
-    ]
-  },
-  "selector": {
-    "criteria": [
-      {
-        "type": "ETH_TYPE",
-        "ethType": "0x0800"
-      },
-      {
-        "type": "IPV4_SRC",
-        "ip": src_ip
-      },
-      {
-        "type": "IPV4_DST",
-        "ip": dst_ip
-      },
-      {
-        "type": "TCP_DST",
-        "tcpPort": dst_port
-      },
-    ]
-  }
-}"""
+        {
+          "type":"L3MODIFICATION",
+          "subtype":"IPV4_DST",
+          "ip":container_ip
+          },
+              
+        {
+          "type":"L4MODIFICATION",
+          "subtype":"TCP_SRC",
+          "tcpPort":container_port
+        }
+      ]
+    },
+    "selector": {
+      "criteria": [
+        {
+          "type": "ETH_TYPE",
+          "ethType": "0x0800"
+        },
+        {
+          "type": "IPV4_SRC",
+          "ip": src_ip
+        },
+        {
+          "type": "IPV4_DST",
+          "ip": dst_ip
+        },
+        {
+          "type": "TCP_DST",
+          "tcpPort": dst_port
+        },
+      ]
+    }
+    }"""
+
+    flow2=f""""""
+    print(flow1)
+
+    #send request to onos
+    
+
+

@@ -57,7 +57,7 @@ def add_flow():
         print (containerList)
 
         #Check if there is a honeypot available
-        if containerList["services"]["busy"] == "False":
+        if containerList and containerList["services"]["busy"] == "False":
             print("found free container")
             flow_port = containerList["services"]["vm_port"] 
             flow_ip = get_vm_ip_by_name (containerList["vm_name"], vmList)
@@ -65,6 +65,7 @@ def add_flow():
             print ("flow ip and port: ",flow_ip,flow_port)
         else:
             #Find if there is available vm
+            print ("Get container count")
             containerCount = get_container_count(f"http://{ip_container_master}:{CONTAINER_SERVER_PORT}")
             print (containerCount)
             chosen_vm=None

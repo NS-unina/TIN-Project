@@ -68,10 +68,8 @@ def get_container_count(CONTAINER_SERVER_URL):
 def create_vm(VM_SERVER_URL):
   try:
     url= f"{VM_SERVER_URL}/vm/create"
-    print (url)
-    
-    #payload=json.dumps({"":f"{}"})
-    response=requests.post(url,json={}) #per ora manda vuoto quindi usa tutti i valori di default
+ 
+    response=requests.post(url,json={}) #default values
     if (response.status_code == 201):
         print("Vm created successfully!")
         return response.json()["vm"]
@@ -87,7 +85,7 @@ def create_container(vm_ip,vm_port,service_port):
 
     url= f"http://{vm_ip}:{vm_port}/container/create"
     
-    payload=json.dumps({"image":f"{image}"})
+    payload=json.dumps({"service_port":f"{service_port}"})
     response=requests.post(url,json=payload)
     if (response.status_code == 201):
         print("Container created successfully!")

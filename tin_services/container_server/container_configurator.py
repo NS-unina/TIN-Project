@@ -206,7 +206,7 @@ def stop_container(container_name):
 @app.route('/container/count', methods=['GET'])
 def container_number():
     try:
-
+        #[TODO] Se ci sono vm ma hanno 0 container allora la lista che deve essere restituita deve essere del tipo {'my-vm': 0, 'my-vm2': 0, ecc}
         result = count_container(containerCollection)
         result_dict = {item["vm_name"]: item["number_of_containers"] for item in result}
 

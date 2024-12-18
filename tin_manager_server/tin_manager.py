@@ -51,33 +51,34 @@ def add_flow():
         print(vmList)
 
         #Get containerList by service_port
-        ip_container_master = vmList[0]["ip"]
-        print (ip_container_master)
+        ip_container_master = vmList["ip"]
+        print (f"Requesting available container list from {ip_container_master}:{CONTAINER_SERVER_PORT} ...")
         containerList = get_container_list_by_service (f"http://{ip_container_master}:{CONTAINER_SERVER_PORT}", dst_port)
         print (containerList)
 
         #Check if there is a honeypot available
         if containerList and containerList["services"]["busy"] == "False":
-            print("found free container")
+            print(f"Found free container: {containerList["name"]}")
             flow_port = containerList["services"]["vm_port"] 
             flow_ip = get_vm_ip_by_name (containerList["vm_name"], vmList)
+            print ("Flow ip and port: ",flow_ip,flow_port)
 
-            print ("flow ip and port: ",flow_ip,flow_port)
         else:
-            #Find if there is available vm
-            print ("Get container count")
-            containerCount = get_container_count(f"http://{ip_container_master}:{CONTAINER_SERVER_PORT}")
-            print (containerCount)
+            #Find if there is a vm available on which to create the container
+            print (f"Requesting number of container on each vm from {ip_container_master}:{CONTAINER_SERVER_PORT} ...")
+            # containerCount = get_container_count(f"http://{ip_container_master}:{CONTAINER_SERVER_PORT}")
+            # print (containerCount)
+            containerCount = {'fxxRa': 0}
+
             chosen_vm=None
             for vm in containerCount:
                 if (containerCount[vm]<MAX_CONTAINERS):
-                    print("found vm")
-                    for item in vmList:
-                        if (item["name"]==vm):
-                            chosen_vm=item
-                            print("chosen vm:",chosen_vm)
-                            break
-                    break          
+                    if (vmList["name"]==vm):
+                        flow_ip=vmList["ip"]
+                        print(f"Found vm '{vm}', ip '{vmList["ip"]}'. Creating container...")
+                        # container = create_container(flow_ip,vm_port,dst_port)
+                        break
+              
             if (not chosen_vm):
                 print ("creating vm")
                 #chosen_vm=create_vm(VM_SERVER_URL)
@@ -97,6 +98,8 @@ def add_flow():
     except (VmListError, ContainerListError) as e:
         return jsonify({'error': f'{e.message}'}), 500
     except ServerNotRunning as e:
+        return jsonify({'error': f'{e.message}'}), 500
+    except CreateContainerFailed as e:
         return jsonify({'error': f'{e.message}'}), 500
 
 

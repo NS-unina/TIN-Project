@@ -190,7 +190,7 @@ def list_vms():
 
     try:
         vmlist = list(collection.find({} ,{"_id": 0}))
-        return jsonify(vmlist), 200
+        return jsonify(vmlist[0]), 200
     except pymongo.errors.ConnectionFailure as e:
         return jsonify({'error': 'Connection to database failed.'}), 500
     except Exception as e:

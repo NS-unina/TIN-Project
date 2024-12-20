@@ -37,6 +37,38 @@ def search_services (service_port, collection):
     return list(collection.aggregate(pipeline))
 
 
+#Search what image to use for the given service
+def search_container_by_service (service_port, collection):
+    pipeline = [
+        {
+            "$match": {
+                 "$elemMatch": {
+                    "service_port": f"{service_port}",
+                    "busy":"False" 
+                }
+            }
+        },
+        {
+            "$unwind": "$services"
+        },
+        {
+            "$match": {
+                "services.service_port": f"{service_port}"
+            }
+        },
+        {
+            "$sort": {"services.priority": 1}  # Sort by priority descending
+        },
+        {
+            "$limit": 1  # Take the top result
+        }
+        ]
+    
+    return list(collection.aggregate(pipeline))
+
+
+
+
 #Create item in the list
 def create_item_list(container, all_services, containerCollection):
 
@@ -105,4 +137,3 @@ def count_container(containerCollection):
         ]
     
     return list(containerCollection.aggregate(pipeline))
-        

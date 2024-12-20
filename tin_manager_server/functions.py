@@ -21,7 +21,7 @@ def get_vm_list (VM_SERVER_URL):
       raise ServerNotRunning ("VM Server not running. Can not configure vms list.", error_code=503)
   
 
-def get_container_list_by_service (CONTAINER_SERVER_URL, service_port):
+def get_container_by_service (CONTAINER_SERVER_URL, service_port):
  
   try:
       #Request to vm_configurator
@@ -34,12 +34,6 @@ def get_container_list_by_service (CONTAINER_SERVER_URL, service_port):
           raise ContainerListError ("Container list not obtained.", error_code=response.status_code)
   except requests.exceptions.ConnectionError:
       raise ServerNotRunning ("Container Server not running. Can not configure container list.", error_code=503)
-
-
-def get_vm_ip_by_name (vm_name, vmList):
-    for vm in vmList:
-        if vm["name"] == vm_name:
-            return vm["ip"]
     
 
 def get_container_count(CONTAINER_SERVER_URL):
@@ -56,20 +50,11 @@ def get_container_count(CONTAINER_SERVER_URL):
       raise ServerNotRunning ("Container Server not running. Can not configure container list.", error_code=503)
 
 
-
-
-
-
-
-
-
-
-
 def create_vm(VM_SERVER_URL):
   try:
     url= f"{VM_SERVER_URL}/vm/create"
- 
-    response=requests.post(url,json={}) #default values
+
+    response=requests.post(url,json={}) 
     if (response.status_code == 201):
         print("Vm created successfully!")
         return response.json()["vm"]
@@ -80,13 +65,15 @@ def create_vm(VM_SERVER_URL):
     raise ServerNotRunning ("VM Server not running. Can not configure vms list.", error_code=503)
 
 
+def create_container(vm_ip,CONTAINER_SERVER_PORT,service_port): 
 
-def create_container(vm_ip,vm_port,service_port): 
-
-    url= f"http://{vm_ip}:{vm_port}/container/create"
+    url= f"http://{vm_ip}:{CONTAINER_SERVER_PORT}/container/create"
     
-    payload=json.dumps({"service_port":f"{service_port}"})
-    response=requests.post(url,json=payload)
+    payload={"service_port":f"{service_port}"}
+    headers = {"Content-Type": "application/json"}
+    
+    response=requests.post(url,json=payload,headers=headers)
+
     if (response.status_code == 201):
         print("Container created successfully!")
         print(response.json()["container"])
@@ -94,69 +81,17 @@ def create_container(vm_ip,vm_port,service_port):
     else:
         raise CreateContainerFailed (f"{response.json}", error_code=response.status_code)
     
-   
 
-
-#Find available container
-def get_available_container(service,HoneyfarmList):
-
-    existing_containers= HoneyfarmList.get(service)
-    if (not existing_containers):
-        return 
-                 
-    for container in existing_containers:
-        print("--------------------")   
-        print("checking if container is busy")
-        print(container["busy"])
-        
-        if(container["busy"]=="False"):
-            print("checking status")
-            if (container["status"]=="running"):
-                 print("Container found",container)
-                 return container
-            else:
-                 #container not running
-                 print(container["status"])
-                 continue
-
-    #If no one is available
-    return 
-
-
-def get_available_vm(vms_list,MAX_CONTAINERS):
-     
-    print(vms_list)
-    #{'vms': [{'name': 'test2', 'ip': '127.0.0.1', 'status': 'not_created', 'n_container': '3'}]}
-
-    if (not vms_list):
-        return
-
-    for vm in vms_list["vms"]:
-        print (vm["ip"])        
-        #check capacity
-        if(int(vm["n_container"]) >= MAX_CONTAINERS):
-              print("Max containers reached for vm: ",vm["name"])
-              continue 
-        else:
-              #check status
-              if (vm["status"]=="running"):
-                   print("vm found:", vm["name"],vm["status"])
-                   return vm  
-    return 
-
-
-
-
-
-
+def get_vm_ip_by_name (vm_name, vmList):
+    for vm in vmList:
+        if vm["name"] == vm_name:
+            return vm["ip"]
 
 
 
 def create_flow(ovs_id,src_ip,dst_ip,dst_port,container_ip,container_port):
         
     
-
-
     #ricordare di fare 2 flow (andata e ritorno) e l'elenco dei flow creati
     #cancellazione basata su lastseen di onos che fa partire pure la cancellazione dei container
 

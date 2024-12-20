@@ -170,7 +170,7 @@ def delete_vm(vm_name):
         
         #Deleting vm and directory
         v = vagrant.Vagrant(vm_path)
-        #v.destroy()
+        v.destroy()
         delete_from_dictionary(vm_name,collection)
         rmtree(vm_path)
         return jsonify({"message": f"VM '{vm_name}' sucessfully deleted!"}), 200
@@ -190,7 +190,7 @@ def list_vms():
 
     try:
         vmlist = list(collection.find({} ,{"_id": 0}))
-        return jsonify(vmlist[0]), 200
+        return jsonify(vmlist), 200
     except pymongo.errors.ConnectionFailure as e:
         return jsonify({'error': 'Connection to database failed.'}), 500
     except Exception as e:

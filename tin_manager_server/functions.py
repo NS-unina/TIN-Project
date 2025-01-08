@@ -89,60 +89,132 @@ def get_vm_ip_mac_by_name (vm_name, vmList):
 
 
 
-def create_flow(ovs_id,src_ip,dst_ip,dst_port,container_ip,container_port):
+def create_flow(ovs_id,attacker_ip,server_ip,server_port,container_ip,container_mac,container_port):
         
     
     #ricordare di fare 2 flow (andata e ritorno) e l'elenco dei flow creati
     #cancellazione basata su lastseen di onos che fa partire pure la cancellazione dei container
 
-    flow1=f"""{
-    "priority": 40000,
-    "timeout": 0,
-    "isPermanent": true,
-    "deviceId": ovs_id,
-    "treatment": {
-      "instructions": [
-        {
-          "type": "OUTPUT",
-          "port": "NORMAL"
-        },
-        {
-          "type":"L3MODIFICATION",
-          "subtype":"IPV4_DST",
-          "ip":container_ip
-          },
-              
-        {
-          "type":"L4MODIFICATION",
-          "subtype":"TCP_SRC",
-          "tcpPort":container_port
-        }
-      ]
-    },
-    "selector": {
-      "criteria": [
-        {
-          "type": "ETH_TYPE",
-          "ethType": "0x0800"
-        },
-        {
-          "type": "IPV4_SRC",
-          "ip": src_ip
-        },
-        {
-          "type": "IPV4_DST",
-          "ip": dst_ip
-        },
-        {
-          "type": "TCP_DST",
-          "tcpPort": dst_port
-        },
-      ]
-    }
-    }"""
 
-    flow2=f""""""
-    print(flow1)
+
+
+    tcp_flow_attacker_honeypot={
+    "flows": [
+        {
+            "priority": 50000,
+            "timeout": 0,
+            "isPermanent": true,
+            "deviceId": ovs_id,
+            "treatment": {
+                "instructions": [
+                    {
+                        "type": "L4MODIFICATION", 
+                        "subtype":"TCP_DST", 
+                        "tcpPort":container_port 
+                    },
+                    {
+                        "type": "L3MODIFICATION",
+                        "subtype": "IPV4_DST",
+                        "ip": container_ip
+                    },
+                    {
+                        "type": "L2MODIFICATION",
+                        "subtype": "ETH_DST",
+                        "mac": container_mac
+                    },
+                    {
+                        "type": "OUTPUT",
+                        "port": "NORMAL"
+                    }
+                ]
+            },
+            "selector": {
+                "criteria": [
+                    {
+                        "type": "ETH_TYPE",
+                        "ethType": "0x0800"
+                    },
+                    {
+                        "type": "IP_PROTO",
+                        "protocol": 6
+                    },
+                    {
+                        "type": "IPV4_SRC",
+                        "ip": attacker_ip+"/32"
+                    },
+                    {
+                        "type": "IPV4_DST",
+                        "ip": server_ip+"/32"
+                    },
+                    {   
+                        "type":"TCP_DST", 
+                        "tcpPort":server_port
+                    }
+
+                ]
+            }
+              }
+          ]
+      }
+
+    tcp_flow_honeypot_attacker={
+    "flows": [
+        {
+            "priority": 50000,
+            "timeout": 0,
+            "isPermanent": true,
+            "deviceId": ovs_id,
+            "treatment": {
+                "instructions": [
+                    {
+                        "type": "L3MODIFICATION",
+                        "subtype": "IPV4_SRC",
+                        "ip": server_ip
+                    },
+                    {
+                        "type": "L4MODIFICATION", 
+                        "subtype":"TCP_SRC", 
+                        "tcpPort": server_port 
+                    },
+                    {
+                        "type": "OUTPUT",
+                        "port": "NORMAL"
+                    }
+                ]
+            },
+            "selector": {
+                "criteria": [
+                    {
+                        "type": "ETH_TYPE",
+                        "ethType": "0x0800"
+                    },
+                    {
+                        "type": "IPV4_SRC",
+                        "ip": container_ip+"/32"
+                    },
+                    {
+                        "type": "IPV4_DST",
+                        "ip": attacker_ip+"/32"
+                    },
+                    {   
+                        "type":"TCP_SRC", 
+                        "tcpPort": container_port
+                    }
+
+                ]
+            }
+              }
+          ]
+      }
+    
+    
+    
+    
+    
+    
+    print(tcp_flow_attacker_honeypot)
+    print("------------------------")
+    print(tcp_flow_honeypot_attacker)
 
     #send request to onos
     

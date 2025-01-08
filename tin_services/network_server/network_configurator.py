@@ -22,7 +22,7 @@ try:
     if(not os.path.exists(f"/sys/class/net/{ovs_bridge}")):
         subprocess.run(["sudo", "ovs-vsctl", "add-br", ovs_bridge], check=True)
         print(f"Created OVS {ovs_bridge}")
-    subprocess.run(["sudo", "ovs-vsctl", "set", "bridge", ovs_bridge, "protocols=OpenFlow10", "--", "set-controller", ovs_bridge, f"tcp:{ip_onos}:6653"], check=True)
+    subprocess.run(["sudo", "ovs-vsctl", "set", "bridge", ovs_bridge, "protocols=OpenFlow13", "--", "set-controller", ovs_bridge, f"tcp:{ip_onos}:6653"], check=True)
     
     #connect bridge to host
     if(not os.path.exists(f"/sys/class/net/host-veth")):

@@ -59,7 +59,7 @@ while True:
         
         # Restore vm's last state
         print ("\nRestoring vm's last state ... ")
-        restore_vm_status(VM_PATH, collection)
+        #restore_vm_status(VM_PATH, collection)
 
         print ("\nSTARTUP DONE")
         break
@@ -125,9 +125,11 @@ def create_vm():
         else:
             return jsonify({'error': f"Request failed."}), response.status_code
         
+        vm_mac = generate_default_mac (collection)
+
         #Creating vagrantfile and save information in vm dictionary
-        create_vagrantfile(vm_path, vm_name,vm_box, vm_cpus, vm_ram, vm_ip, vm_interface)
-        vm = create_item_vm_list(vm_name, vm_id, vm_ram, vm_cpus, vm_ip, collection)
+        create_vagrantfile(vm_path, vm_name,vm_box, vm_cpus, vm_ram, vm_ip, vm_mac, vm_interface)
+        vm = create_item_vm_list(vm_name, vm_id, vm_ram, vm_cpus, vm_ip, vm_mac, collection)
 
         #Starting the vm
         v = vagrant.Vagrant(vm_path)

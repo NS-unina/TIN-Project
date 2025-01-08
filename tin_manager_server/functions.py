@@ -82,10 +82,10 @@ def create_container(vm_ip,CONTAINER_SERVER_PORT,service_port):
         raise CreateContainerFailed (f"{response.json}", error_code=response.status_code)
     
 
-def get_vm_ip_by_name (vm_name, vmList):
+def get_vm_ip_mac_by_name (vm_name, vmList):
     for vm in vmList:
         if vm["name"] == vm_name:
-            return vm["ip"]
+            return {"ip":vm["ip"],"mac":vm["mac"]} 
 
 
 

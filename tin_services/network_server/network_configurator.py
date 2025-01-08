@@ -5,6 +5,7 @@ import os
 from config import DevelopmentConfig
 
 
+# ********[ LOAD CONFIGURATION FROM config.py ]********
 app = Flask(__name__)
 #app.config.from_object(__name__)
 app.config.from_object(DevelopmentConfig)  # Load the configuration
@@ -14,25 +15,32 @@ ip_host = app.config['IP_HOST']
 ip_onos = app.config['IP_ONOS']
 ovs_bridge = app.config['OVS_BRIDGE']
 
+
+# ********[ STARTUP ]********
 try:
     #check if OVS exists, if not creates it
     if(not os.path.exists(f"/sys/class/net/{ovs_bridge}")):
         subprocess.run(["sudo", "ovs-vsctl", "add-br", ovs_bridge], check=True)
-        #subprocess.run(["sudo", "ovs-vsctl", "set", "bridge", ovs_bridge, "protocols=OpenFlow10", "--", "set-controller", ovs_bridge, f"tcp:{ip_onos}:6653"], check=True)
         print(f"Created OVS {ovs_bridge}")
+    subprocess.run(["sudo", "ovs-vsctl", "set", "bridge", ovs_bridge, "protocols=OpenFlow10", "--", "set-controller", ovs_bridge, f"tcp:{ip_onos}:6653"], check=True)
+    
     #connect bridge to host
     if(not os.path.exists(f"/sys/class/net/host-veth")):
         subprocess.run(["sudo", "ovs-vsctl", "add-port", ovs_bridge, "host-veth", "--", "set", "interface", "host-veth", "type=internal"], check=True)
-    
+
     #check if host-veth down
     state = subprocess.check_output(["ip", "link", "show", "host-veth"], text=True)
     if ("state DOWN" in state):
         subprocess.run(["sudo", "ip", "addr", "add", ip_host, "dev", "host-veth"], check=True)
         subprocess.run(["sudo", "ip", "link", "set", "host-veth", "up"], check=True)
 
+    print ("\nSTARTUP DONE")
+
 except Exception as e:
     print (f"error: {e}")
 
+
+# ********[ API ]********
 @app.route('/network/create_int/<vm_id>', methods=['POST'])
 def create_int(vm_id):
 
@@ -64,7 +72,13 @@ def create_int(vm_id):
         subprocess.run(["sudo", "ip", "link", "set", veth_name, "up"], check=True)
         subprocess.run(["sudo", "ip", "link", "set", f"{veth_name}-peer", "up"], check=True)
 
-        return jsonify({'status': 'Network configured', 'interface': f'{veth_name}-peer'}), 201
+        mac = subprocess.run(
+            ["cat", f"/sys/class/net/{veth_name}/address"],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        return jsonify({'status': 'Network configured', 'interface': f'{veth_name}-peer','mac':mac.stdout.strip()}), 201
     except subprocess.CalledProcessError as e:
         return jsonify({'error': str(e)}), 500
 

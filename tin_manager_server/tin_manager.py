@@ -58,7 +58,9 @@ def add_flow():
             if vm["status"] == "running":
                 ip_container_master = vm["ip"]
                 break
+
         #[TODO] ACCENDI UNA VM spenta
+
 
         print (f"Requesting available container list from {ip_container_master}:{CONTAINER_SERVER_PORT} ...")
         container = get_container_by_service (f"http://{ip_container_master}:{CONTAINER_SERVER_PORT}", dst_port)
@@ -95,13 +97,15 @@ def add_flow():
 
 
         #Set flow ip and port with the found container
-        flow_ip= get_vm_ip_by_name (container["vm_name"], vmList)         
+        vm_ip_mac= get_vm_ip_mac_by_name (container["vm_name"], vmList)
+        flow_ip=vm_ip_mac["ip"]
+        flow_mac=vm_ip_mac["mac"]
         for service in container["services"]:
             if(service["service_port"]==dst_port):
                 flow_port=service["vm_port"]
         
         #Creating flow
-        print (f"Creating flow: ip '{flow_ip}', port '{flow_port}'")
+        print (f"Creating flow: ip '{flow_ip}', port '{flow_port}', mac '{flow_mac}'")
         #create_flow(....,flow_ip,flow_port)
 
         return jsonify({"message":  "Flow successfully created!"}), 201

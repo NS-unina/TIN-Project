@@ -20,7 +20,7 @@ def init_int(NET_SERVER,collection):
     return
 
 #Vagrantfile creation
-def create_vagrantfile(vagrantfile_path,name,box,cpus,ram,ip,interface):
+def create_vagrantfile(vagrantfile_path,name,box,cpus,ram,ip,mac,interface):
     
     vagrantfile_content= f"""
     Vagrant.configure("2") do |config|
@@ -41,7 +41,7 @@ def create_vagrantfile(vagrantfile_path,name,box,cpus,ram,ip,interface):
 
         #network configuration
         #config.vm.network :forwarded_port, guest: 5002, host: 5002, id: "container_server"
-        config.vm.network "public_network", bridge: "{interface}", ip: "{ip}"
+        config.vm.network "public_network", bridge: "{interface}", ip: "{ip}", mac: "{mac}"
 
     end
     """
@@ -75,6 +75,20 @@ def generate_default_ip(collection, network, excluded_ips):
     #Ip not found
     raise DefaultIpNotAvailable ("Default IP not available.", error_code=400)
 
+def generate_default_mac (collection):
+
+    used_mac = collection.find({}, {"_id": 0, "mac": 1})
+    while True:
+
+        mac = "020000%02x%02x%02x" % (random.randint(0, 255),
+                             random.randint(0, 255),
+                             random.randint(0, 255))
+
+        if mac not in used_mac:
+            print (mac)
+            return mac
+        
+    
 
 # ********[FUNCTION FOR VM STATUS]********
 
@@ -95,12 +109,12 @@ def restore_vm_status (VM_PATH,collection):
 
         v = vagrant.Vagrant(vm_path)
         if vm["status"] == "running":
+            print (f"Restoring vm {vm["name"]} to running...")
             v.up()
-            print (f"VM {vm["name"]} restored to running.")
         elif vm["status"] == "poweroff":
+            print (f"Restoring vm {vm["name"]} to poweroff...")
             v.halt()
-            print (f"VM {vm["name"]} restored to poweroff.")
-
+            
 
 # Periodic function to update vm
 def sync_vm(VM_PATH, collection):
@@ -203,7 +217,7 @@ def update_ip(ip, vm_name,VM_PATH):
 
 # ********[DICTIONARY LIST VM]********
 # Create item in vm dictionary
-def create_item_vm_list(vm_name, id, ram, cpu, ip, collection):
+def create_item_vm_list(vm_name, id, ram, cpu, ip, mac, collection):
 
     newvm = {
         "name": vm_name,
@@ -211,6 +225,7 @@ def create_item_vm_list(vm_name, id, ram, cpu, ip, collection):
         "ram": ram,
         "cpu": cpu,
         "ip": ip,
+        "mac": mac,
         "status": "not created"
     }
 

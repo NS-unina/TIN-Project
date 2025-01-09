@@ -43,7 +43,8 @@ while True:
         #Connection to database
         mongo = pymongo.MongoClient(DATABASE_CONNECTION)
         database = mongo["tinDatabase"] 
-        collection= database["vmList"]
+        collection = database["vmList"]
+        containerCollection = database["containerList"]
         collection.create_index("name", unique=True)
 
         # Attempt to connect to the network server
@@ -171,9 +172,10 @@ def delete_vm(vm_name):
         print(f"Interface deleted successfully!. Response: {response.json()}")
         
         #Deleting vm and directory
+        delete_containers_by_vm (vm_name, containerCollection)
         v = vagrant.Vagrant(vm_path)
         v.destroy()
-        delete_from_dictionary(vm_name,collection)
+        delete_from_list(vm_name,collection)
         rmtree(vm_path)
         return jsonify({"message": f"VM '{vm_name}' sucessfully deleted!"}), 200
     

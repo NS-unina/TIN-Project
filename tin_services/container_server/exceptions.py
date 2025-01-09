@@ -1,3 +1,4 @@
+import pymongo.errors
 
 class MongoError(Exception):
     def __init__(self, message, error_code=None):

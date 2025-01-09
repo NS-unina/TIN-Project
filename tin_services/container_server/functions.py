@@ -8,6 +8,24 @@ client = docker.from_env()
 hostname = socket.gethostname()
 
 
+# Periodic function to update vm
+def sync_container(collection):
+    try:
+        for container in client.containers.list(all=True):
+            update_item_list(container.name, "status", container.status, collection)
+    except ContainerNotFound as e:
+        print ({"Error updating container status": f"{e.message}"})
+    except ItemNotModified as e:
+        print ("Nothing to update")
+        pass
+    except pymongo.errors.ConnectionFailure as e:
+        print ({"Error updating container status": "Connection to database failed."})
+    except Exception as e:
+        print ({"Error updating container status": f"Error {e}"})
+    return
+
+
+
 #Search what image to use for the given service
 def search_services (service_port, collection):
     pipeline = [

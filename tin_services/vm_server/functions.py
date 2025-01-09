@@ -261,12 +261,21 @@ def search_item_vm_list(vm_name, field, collection):
 
 
 #Delete from dictionary
-def delete_from_dictionary(vm_name, collection):
+def delete_from_list(vm_name, collection):
 
     result = collection.delete_one({"name": vm_name})
     if (result.deleted_count==0):
         raise ItemNotFound (f"Cannot delete vm {vm_name} ", error_code=400) 
  
+
+def delete_containers_by_vm (vm_name, containerCollection):
+    
+    result = containerCollection.delete_many({"vm_name": vm_name})
+    if (result.deleted_count==0):
+        raise ItemNotFound (f"Cannot delete containers in vm {vm_name} ", error_code=400)
+    else:
+        print (f"{result.delete_count} containers deleted.")
+        return
 
 
 # ********[DATABASE FUNCTION]********

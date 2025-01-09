@@ -9,6 +9,9 @@ import json
 import pymongo
 from flask_cors import CORS
 
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.interval import IntervalTrigger
+
 # ********[ LOAD CONFIGURATION FROM config.py ]********
 app = Flask (__name__)
 app.config.from_object(DevelopmentConfig)
@@ -30,6 +33,12 @@ VM_SERVER_URL=f"http://{app.config['VM_SERVER_IP']}:{app.config['VM_SERVER_PORT'
 # ********[ STARTUP ]********
 
     
+
+
+# Configuration of BackgroundScheduler
+scheduler = BackgroundScheduler()
+scheduler.start()
+scheduler.add_job(lambda: sync_container(containerCollection), trigger=IntervalTrigger(seconds=15))
 
 
 

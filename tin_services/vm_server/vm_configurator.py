@@ -43,9 +43,10 @@ while True:
         #Connection to database
         mongo = pymongo.MongoClient(DATABASE_CONNECTION)
         database = mongo["tinDatabase"] 
-        collection = database["vmList"]
+        vmCollection = database["vmList"]
         containerCollection = database["containerList"]
-        collection.create_index("name", unique=True)
+        serviceCollection = database["serviceList"]
+        vmCollection.create_index("name", unique=True)
 
         # Attempt to connect to the network server
         url = f"{NET_SERVER_URL}/network/ping"
@@ -54,13 +55,13 @@ while True:
         # Initialize interfaces
         print ("\nInitializing interfaces ... ")
         if response.status_code == 200:
-            init_int(NET_SERVER_URL, collection)
+            init_int(NET_SERVER_URL, vmCollection)
         else:
             raise NetworkServerError (f"Failed initializing interfaces. Response: {response.json}", error_code=response.status_code)
         
         # Restore vm's last state
         print ("\nRestoring vm's last state ... ")
-        #restore_vm_status(VM_PATH, collection)
+        #restore_vm_status(VM_PATH, vmCollection)
 
         print ("\nSTARTUP DONE")
         break
@@ -84,7 +85,7 @@ while True:
 # Configuration of BackgroundScheduler
 scheduler = BackgroundScheduler()
 scheduler.start()
-scheduler.add_job(lambda: sync_vm(VM_PATH, collection), trigger=IntervalTrigger(seconds=15))
+scheduler.add_job(lambda: sync_vm(VM_PATH, vmCollection), trigger=IntervalTrigger(seconds=15))
 
 
 
@@ -94,7 +95,7 @@ scheduler.add_job(lambda: sync_vm(VM_PATH, collection), trigger=IntervalTrigger(
 def create_vm():
 
     #Generate vm_id
-    vm_id = generate_unique_id(collection)
+    vm_id = generate_unique_id(vmCollection)
     
     data = request.json
     vm_name = data.get('name', f'{vm_id}')
@@ -103,7 +104,7 @@ def create_vm():
     vm_ram = data.get ('ram', 1024) #default 1024 MB
     
     try:
-        default_ip = generate_default_ip(collection, DEFAULT_NETWORK, EXCLUDED_ADDRESSES)
+        default_ip = generate_default_ip(vmCollection, DEFAULT_NETWORK, EXCLUDED_ADDRESSES)
         vm_ip=data.get('ip', f'{default_ip}')
     except DefaultIpNotAvailable as e:
         return jsonify({"error": "Could not obtain default ip. Ip field is needed"}), 400
@@ -126,17 +127,17 @@ def create_vm():
         else:
             return jsonify({'error': f"Request failed."}), response.status_code
         
-        vm_mac = generate_default_mac (collection)
+        vm_mac = generate_default_mac (vmCollection)
 
         #Creating vagrantfile and save information in vm dictionary
         create_vagrantfile(vm_path, vm_name,vm_box, vm_cpus, vm_ram, vm_ip, vm_mac, vm_interface)
-        vm = create_item_vm_list(vm_name, vm_id, vm_ram, vm_cpus, vm_ip, vm_mac, collection)
+        vm = create_item_vm_list(vm_name, vm_id, vm_ram, vm_cpus, vm_ip, vm_mac, vmCollection)
 
         #Starting the vm
         v = vagrant.Vagrant(vm_path)
         #v.up()
         status = v.status()
-        update_item_vm_list(vm_name, "status", status[0].state, collection)        
+        update_item_vm_list(vm_name, "status", status[0].state, vmCollection)        
         return jsonify({"message": f"VM '{vm_name}' successfully created!", "vm": vm}), 201
 
     except FileExistsError:
@@ -162,7 +163,7 @@ def delete_vm(vm_name):
             return jsonify({"error": f"VM '{vm_name}' doesn't exist"}), 404
 
         #Find associated interface
-        vm_id = search_item_vm_list(vm_name, "id",collection)
+        vm_id = search_item_vm_list(vm_name, "id",vmCollection)
 
         #Delete network interfaces for the VM
         url= f"{NET_SERVER_URL}/network/delete_int/{vm_id}"
@@ -175,7 +176,7 @@ def delete_vm(vm_name):
         delete_containers_by_vm (vm_name, containerCollection)
         v = vagrant.Vagrant(vm_path)
         v.destroy()
-        delete_from_list(vm_name,collection)
+        delete_from_list(vm_name,vmCollection)
         rmtree(vm_path)
         return jsonify({"message": f"VM '{vm_name}' sucessfully deleted!"}), 200
     
@@ -193,7 +194,7 @@ def delete_vm(vm_name):
 def list_vms():
 
     try:
-        vmlist = list(collection.find({} ,{"_id": 0}))
+        vmlist = list(vmCollection.find({} ,{"_id": 0}))
         return jsonify(vmlist), 200
     except pymongo.errors.ConnectionFailure as e:
         return jsonify({'error': 'Connection to database failed.'}), 500
@@ -219,13 +220,13 @@ def update_vm(vm_name):
     
         if (vm_cpus):
             update_cpu(vm_cpus, vm_name,VM_PATH)
-            update_item_vm_list(vm_name, "cpu", vm_cpus,collection)
+            update_item_vm_list(vm_name, "cpu", vm_cpus, vmCollection)
         if (vm_ram):
             update_ram(vm_ram, vm_name,VM_PATH)  
-            update_item_vm_list(vm_name, "ram", vm_ram,collection)
+            update_item_vm_list(vm_name, "ram", vm_ram, vmCollection)
         if (vm_ip):
             update_ip(vm_ip, vm_name,VM_PATH)
-            update_item_vm_list(vm_name, "ip", vm_ip,collection)
+            update_item_vm_list(vm_name, "ip", vm_ip, vmCollection)
 
         v = vagrant.Vagrant(vm_path)
         #v.reload()
@@ -303,79 +304,33 @@ def power_vm(vm_name):
         return jsonify({"error": f"Error starting  vm. {e}"}), 500
 
 
-#[TODO]
-@app.route('/vm/services', methods=['GET'])
-def list_services():
-    
-    #[TODO] implementare lista servizi
-    
-    services= {
-        "21": {
-            "name": "ssh",
-            "images": [
-            {
-            "name": "cowrie/cowrie",
-            "enabled": "1"
-            },
-            {
-            "name": "sussy/sussy",
-            "enabled": "0"
-            },
-            ]
-        },
-        "23": {
-            "name": "telnet",
-            "images": []
-        }
-    }
-    
-    
-    return jsonify(services), 200
 
-
-#[TODO]
-@app.route('/vm/services/enable', methods=['POST'])
+@app.route('/vm/services/priority', methods=['POST'])
 def edit_service_priority():
     data = request.json
-    service_port = data.get('service_port')
     image = data.get ('image')
+    service_port = data.get('service_port') 
+    priority=data.get('priority')
 
-    #[TODO] implementare logica da cui prendere la lista di servizi
-    services= {
-        "21": {
-            "name": "ssh",
-            "images": [
-            {
-            "name": "cowrie/cowrie",
-            "enabled": "1"
-            },
-            {
-            "name": "sussy/sussy",
-            "enabled": "0"
-            },
-            ]
-        },
-        "23": {
-            "name": "telnet",
-            "images": []
-        }
-    }
+    if not image:
+        return jsonify({"error": "'image' field is needed"}), 400
+    if not priority:
+        return jsonify({"error": "'priority' field is needed"}), 400
+    if not service_port:
+        return jsonify({"error": "'service_port' field is needed"}), 400
 
-    if service_port not in services:
-        return jsonify({'error': f"Service with port {service_port} not found."})
+    try:
+        update_priority_service_list(image, service_port, priority, serviceCollection)
+        return jsonify({'message': f"priority for service {service_port} in image {image} updated to {priority}"}), 200
 
-    images = services[service_port].get("images", [])
-    if not images or not any(item["name"]==image for item in images):
-        return jsonify({'error': f"Image {image} not found."}) , 404
-    print (images)
-    
-    for items in images:
-        if items["name"] == image:
-            items["enabled"] = "1"
-        else:
-            items["enabled"] = "0"
-
-    return jsonify({'message': services}), 200
+    except ImageNotFound as e:
+        return jsonify({"error": f"{e.message}"}), 404
+    except ItemNotModified as e:
+        return jsonify ({'message': f"{e.message}"}), 200
+    except pymongo.errors.ConnectionFailure as e:
+        return jsonify({'error': 'Connection to database failed.'}), 500
+    except Exception as e:
+        return jsonify({"error": f"Error. {e}"}), 500
 
 
 

@@ -59,23 +59,42 @@ def create_container():
            return jsonify({'error': f'Container name {name} already exists.'}), 400        
 	
         #Search what image to use for the given service
-        result = search_services (service_port, serviceCollection)
-        if not result:
-            return jsonify({'error': f'No images found with service_port = {service_port}.'}), 404
+        container_data = search_image_by_service (service_port, serviceCollection)
+        if not container_data:
+            return jsonify({'error': f'No image found with service_port = {service_port}.'}), 404
         
         #Select docker images
-        docker_image=result[0]["image"]
+        docker_image=container_data[0]["image"]
         print(f"Image: {docker_image}")
+
+        #previous query returns only the searched service, we need all the services to map them for future use
         all_services = serviceCollection.find_one({"image": docker_image}, {"_id": 0, "services": 1})
+
+        #Parameters 
         port_list={}
+        volumes={}
+        environment_variables={}
+        #environment = {"ENV_VAR_1": "value1",    "ENV_VAR_2": "value2"}
+        #volumes = {"/path/on/host": {"bind": "/path/in/container", "mode": "rw"}
+
+
+        print(all_services)
         for service in all_services["services"]:
             port_list[service["container_port"]]=None
-            
+        
+        for volume in container_data[0]["volumes"]:
+            volumes[volume["host"]] = {"bind":volume["container"],"mode":"rw"}
+
+        for variable in container_data[0]["environment"]:
+            environment_variables[variable["name"]]=variable["value"]
+
+        print("-----------------")
+        print (volumes)
         #if name was provided use it , otherwise use docker generated
         if name:
-            container=client.containers.run(docker_image,name=name,detach=True, ports=port_list)
+            container=client.containers.run(docker_image,name=name,detach=True, ports=port_list,volumes=volumes,environment=environment_variables)
         else:
-            container=client.containers.run(docker_image,detach=True, ports=port_list)
+            container=client.containers.run(docker_image,detach=True, ports=port_list,volumes=volumes,environment=environment_variables)
 
         # add the dynamically chosen port to the services list, and set the busy state to False
         container=client.containers.get(container.name)

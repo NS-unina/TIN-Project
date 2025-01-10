@@ -237,7 +237,22 @@ def create_item_vm_list(vm_name, id, ram, cpu, ip, mac, collection):
     return newvm 
     
 
-# Update item in vm dictionary
+
+
+# Update image priority in service list
+def update_priority_service_list(image, service_port, priority, collection):
+
+    result = collection.update_one({"image": image},
+                                   {"$set": {"services.$[service].priority": priority }},
+                                    array_filters=[{"service.service_port": service_port}])
+
+    if (result.matched_count==0):
+        raise ImageNotFound (f"Can not find image '{image}'.", error_code=404)
+    if(result.modified_count==0):
+        raise ItemNotModified (f"Priority  in '{service_port}' not modified.", error_code=200)
+
+
+# Update item in vm list
 def update_item_vm_list(vm_name, field, value_field, collection):
 
     result = collection.update_one(
@@ -251,7 +266,7 @@ def update_item_vm_list(vm_name, field, value_field, collection):
         raise ItemNotModified (f"Field '{field}' in '{vm_name}' not modified.", error_code=200)
     
 
-#Search value of a field in dictionary
+#Search value of a field in vm list
 def search_item_vm_list(vm_name, field, collection):
 
     item = collection.find_one({"name": vm_name }, {"_id": 0 , f"{field}":1})
@@ -260,7 +275,7 @@ def search_item_vm_list(vm_name, field, collection):
     return item[field]
 
 
-#Delete from dictionary
+#Delete from 
 def delete_from_list(vm_name, collection):
 
     result = collection.delete_one({"name": vm_name})
@@ -272,9 +287,9 @@ def delete_containers_by_vm (vm_name, containerCollection):
     
     result = containerCollection.delete_many({"vm_name": vm_name})
     if (result.deleted_count==0):
-        raise ItemNotFound (f"Cannot delete containers in vm {vm_name} ", error_code=400)
+        print("message: No containers to delete.")
     else:
-        print (f"{result.delete_count} containers deleted.")
+        print (f"{result.deleted_count} containers deleted.")
         return
 
 

@@ -27,7 +27,7 @@ def sync_container(collection):
 
 
 #Search what image to use for the given service
-def search_services (service_port, collection):
+def search_image_by_service (service_port, collection):
     pipeline = [
         {
             "$match": {
@@ -55,7 +55,7 @@ def search_services (service_port, collection):
     return list(collection.aggregate(pipeline))
 
 
-#Search what image to use for the given service
+#Search what container to use for the given service
 def search_container_by_service (service_port, collection):
     pipeline = [
         {

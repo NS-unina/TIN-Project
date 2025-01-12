@@ -24,21 +24,17 @@
                             "properties": {
                                 "name": {
                                     "type": "string",
-                                    "description": "The name of the Docker container to be created."
+                                    "description": "The name of the Docker container to be created.",
+                                    "default": "<default_name>"
                                 },
-                                "image": {
-                                    "type": "string",
-                                    "description": "The Docker image to use for the container."
-                                },
-                                "vm_port": {
+                                "service_port": {
                                     "type": "integer",
-                                    "description": "The port to bind the container to on the VM."
+                                    "description": "The port of the service that the container must offer",
+                                    "default": "22"
                                 }
                             },
                             "required": [
-                                "name",
-                                "image",
-                                "vm_port"
+                                "service_port"
                             ]
                         }
                     }
@@ -93,11 +89,103 @@
         "/container/list": {
             "get": {
                 "tags": [
-                    "Container"
+                    "Container Information"
                 ],
-                "description": "Retrieves a list of all Docker containers and their details.",
+                "description": "Retrieves a list of all Docker containers and their details present in every VM.",
                 "produces": [
                     "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK: Successful operation. Returns a list of containers.",
+                        "examples": {
+                            "application/json": {
+                                "name": "sad_mclaren",
+                                "image": "<Image: cowrie/cowrie:latest>",
+                                "status": "running",
+                                "vm_name": "1Xd5Y",
+                                "services": [
+                                    {
+                                        "name": "ssh",
+                                        "service_port": "22",
+                                        "container_port": "2222",
+                                        "priority": "100",
+                                        "vm_port": "32768",
+                                        "busy": "False"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found: Container file not found."
+                    },
+                    "500": {
+                        "description": "Internal Server Error: An error occurred while fetching the container list."
+                    }
+                }
+            }
+        },
+        "/container/count": {
+            "get": {
+                "tags": [
+                    "Container Information"
+                ],
+                "description": "Returns the number of containers in each VM",
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK: Successful operation. Returns a list of containers.",
+                        "examples": {
+                            "application/json": {
+                                "vm_name":1
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found: Container file not found."
+                    },
+                    "500": {
+                        "description": "Internal Server Error: An error occurred while fetching the container list."
+                    }
+                }
+            }
+        },
+        "/container/ping": {
+            "get": {
+                "tags": [
+                    "Container Information"
+                ],
+                "description": "Returns a simple message indicating that the server is running.",
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation: Server is running."
+                    }
+                }
+            }
+        },
+        "/container/{service_port}": {
+            "get": {
+                "tags": [
+                    "Container Information"
+                ],
+                "description": "Retrieves the top priority container with the specified service.",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "service_port",
+                        "required": true,
+                        "type": "string",
+                        "description": "The number of the service port to filter the containers."
+                    }
                 ],
                 "responses": {
                     "200": {
@@ -193,7 +281,7 @@
     },
     "tags": [
         {
-            "name": "Container",
+            "name": "Container Information",
             "description": ""
         },
         {

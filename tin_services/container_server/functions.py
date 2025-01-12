@@ -75,7 +75,7 @@ def search_container_by_service (service_port, collection):
             }
         },
         {
-            "$sort": {"services.priority": 1}  # Sort by priority descending
+            "$sort": {"services.priority": -1}  # Sort by priority descending
         },
         {
             "$limit": 1  # Take the top result

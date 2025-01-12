@@ -330,6 +330,60 @@
                     }
                 }
             }
+        },
+        "/vm/services/priority": {
+            "post": {
+                "tags": [
+                    "Services"
+                ],
+                "description": "Updates the priority of a honeypot service associated with a specific image and service port.",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "image": {
+                                    "type": "string",
+                                    "description": "The name of the image associated with the service."
+                                },
+                                "service_port": {
+                                    "type": "integer",
+                                    "description": "The service port for which the priority needs to be updated."
+                                },
+                                "priority": {
+                                    "type": "integer",
+                                    "description": "The new priority to assign to the service."
+                                }
+                            },
+                            "example": {
+                                "image": "example-image",
+                                "service_port": 80,
+                                "priority": 1
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK: Priority updated successfully."
+                    },
+                    "400": {
+                        "description": "Bad Request: Missing required fields in the request."
+                    },
+                    "404": {
+                        "description": "Not Found: Specified image or service not found."
+                    },
+                    "500": {
+                        "description": "Internal server error: Generic error or database connection issue."
+                    }
+                }
+            }
         }
     },
     "tags": [

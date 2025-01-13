@@ -160,7 +160,9 @@ def add_flow():
 
 
 
-
+@app.route('/tinmanager/ping', methods=['GET'])
+def ping():
+    return jsonify("server running"), 200
 
 
 

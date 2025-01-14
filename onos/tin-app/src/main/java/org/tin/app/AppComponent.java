@@ -185,59 +185,6 @@ public class AppComponent {
                             CompletableFuture<HttpResponse<String>> futureResponse_redirection = client.sendAsync(request_redirection, HttpResponse.BodyHandlers.ofString());
                             futureResponse_redirection.thenAccept(response -> {log.info("Response Code (redirection): " + response.statusCode());  log.info("Response Body (redirection): " + response.body());});
                             log.info ("Request_redirection send");
-
-
-                            //payload to prevently drop packets while waiting for redirection flow
-                            String payload_drop = "{"
-                            + "\"flows\": ["
-                            + "  {"
-                            + "    \"priority\": 100,"
-                            + "    \"timeout\": 0,"
-                            + "    \"isPermanent\": true,"
-                            + "    \"deviceId\": \"" + deviceId + "\","
-                            + "    \"treatment\": {},"
-                            + "    \"selector\": {"
-                            + "      \"criteria\": ["
-                            + "        {"
-                            + "          \"type\": \"ETH_TYPE\","
-                            + "          \"ethType\": \"0x0800\""
-                            + "        },"
-                            + "        {"
-                            + "          \"type\": \"IP_PROTO\","
-                            + "          \"protocol\": 6"
-                            + "        },"
-                            + "        {"
-                            + "          \"type\": \"IPV4_DST\","
-                            + "          \"ip\": \"" + dstIp + "/32\""
-                            + "        },"
-                            + "        {"
-                            + "          \"type\": \"IPV4_SRC\","
-                            + "          \"ip\": \"" + srcIp + "/32\""
-                            + "        },"
-                            + "        {"
-                            + "          \"type\": \"TCP_DST\","
-                            + "          \"tcpPort\": \"" + dstPort + "\""
-                            + "        }"
-                            + "      ]"
-                            + "    }"
-                            + "  }"
-                            + "]"
-                            + "}";
-
-                            String auth = "onos" + ":" + "rocks";
-                            String encodedAuth = Base64.getEncoder().encodeToString(auth.getBytes());
-
-                            HttpRequest request_drop = HttpRequest.newBuilder()
-                                .uri(URI.create("http://localhost:8181/onos/v1/flows"))
-                                .header("Content-Type", "application/json")
-                                .header("Authorization", "Basic " + encodedAuth)
-                                .POST(HttpRequest.BodyPublishers.ofString(payload_drop))
-                                .build();
-                            CompletableFuture<HttpResponse<String>> futureResponse_drop = client.sendAsync(request_drop, HttpResponse.BodyHandlers.ofString());
-                            futureResponse_drop.thenAccept(response -> {log.info("Response Code (drop): " + response.statusCode());  log.info("Response Body (drop): " + response.body());});
-                            log.info ("Request drop send");
-
-
                             }
                         }
 
@@ -251,11 +198,17 @@ public class AppComponent {
                             log.info("(UDP) Forbidden port");
                             //Request
                             HttpClient client = HttpClient.newHttpClient();
-                            String payload = "{\"src_ip\":\"foo\", \"dst_ip\":\"bar\", \"port\":1}";
-                            HttpRequest request = HttpRequest.newBuilder()
+                            String payload_redirection = "{"
+                                + "\"src_ip\": \"" + srcIp + "\","
+                                + "\"dst_ip\": \"" + dstIp + "\","
+                                + "\"src_port\": \"" + srcPort + "\","
+                                + "\"dst_port\": \"" + dstPort + "\","
+                                + "\"ovs_id\": \"" + deviceId + "\""
+                                + "}";                            
+                                HttpRequest request = HttpRequest.newBuilder()
                                 .uri(URI.create("http://"+tinIp+":"+tinPort+"/tinmanager/ping"))
                                 .header("Content-Type", "application/json")
-                                .POST(HttpRequest.BodyPublishers.ofString(payload))
+                                .POST(HttpRequest.BodyPublishers.ofString(payload_redirection))
                                 .build();
                             CompletableFuture<HttpResponse<String>> futureResponse = client.sendAsync(request, HttpResponse.BodyHandlers.ofString());
                             futureResponse.thenAccept(response -> {log.info("Response Code: " + response.statusCode());  log.info("Response Body: " + response.body());});

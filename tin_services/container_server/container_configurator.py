@@ -143,7 +143,28 @@ def delete_container(container_name):
     except docker.errors.NotFound:
         return jsonify({'Container not found': f'{container_name}'}), 404
     
-     
+
+@app.route('/container/delete/byport/<vm_port>', methods=['DELETE'])
+def delete_container_by_port(vm_port):
+    
+    try:
+        container_name = get_container_by_vm_port(vm_port, containerCollection)["name"]
+        print (container_name)
+
+        container = client.containers.get(container_name)
+        container.stop()  
+        container.remove()
+        delete_from_db(container_name,containerCollection)
+        return jsonify({"message": f"Container '{container_name}' successfully deleted!"}), 200
+
+
+    except ItemNotFound as e:
+        return jsonify ({'error': f"{e.message}"}), e.error_code
+    except pymongo.errors.ConnectionFailure as e:
+        return jsonify({'error': 'Connection to database failed.'}), 500
+    except docker.errors.NotFound:
+        return jsonify({'Container not found': f'{container_name}'}), 404
+    
      
 @app.route('/container/list', methods=['GET'])
 def read_container():

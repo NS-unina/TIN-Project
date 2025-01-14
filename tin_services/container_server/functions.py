@@ -45,7 +45,7 @@ def search_image_by_service (service_port, collection):
             }
         },
         {
-            "$sort": {"services.priority": 1}  # Sort by priority descending
+            "$sort": {"services.priority": -1}  # Sort by priority descending
         },
         {
             "$limit": 1  # Take the top result
@@ -155,3 +155,15 @@ def count_container(containerCollection):
         ]
     
     return list(containerCollection.aggregate(pipeline))
+
+
+def get_container_by_vm_port(vm_port, collection):
+
+    item = collection.find_one({"vm_name": hostname , "services.vm_port":vm_port }, {"_id": 0 , "name": 1})
+    if (not item):
+        raise ItemNotFound (f"Can not find container with vm_port {vm_port}.", error_code=404)
+    
+    print(item)    
+    return item  
+
+

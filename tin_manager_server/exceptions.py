@@ -6,6 +6,12 @@ class ContainerListError(Exception):
         self.error_code = error_code
         super().__init__(message)
 
+class ContainerDeleteError(Exception):
+    def __init__(self, message, error_code=None):
+        self.message = message
+        self.error_code = error_code
+        super().__init__(message)
+
 class VmListError(Exception):
     def __init__(self, message, error_code=None):
         self.message = message
@@ -32,3 +38,8 @@ class CreateContainerFailed(requests.exceptions.ConnectionError):
         self.error_code = error_code
         super().__init__(message)
 
+class OnosDeleteFlowError(requests.exceptions.ConnectionError):
+    def __init__(self, message, error_code=None):
+        self.message = message
+        self.error_code = error_code
+        super().__init__(message)

@@ -4,7 +4,12 @@ from config import DevelopmentConfig
 from flask import Flask, jsonify, request, send_from_directory
 import requests
 import json
+
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.interval import IntervalTrigger
+
 from flask_swagger_ui import get_swaggerui_blueprint
+
 
 
 # ********[ LOAD CONFIGURATION FROM config.py ]********
@@ -18,6 +23,88 @@ VM_SERVER_URL=f"http://{app.config['VM_SERVER_IP']}:{app.config['VM_SERVER_PORT'
 CONTAINER_SERVER_PORT=app.config['CONTAINER_SERVER_PORT']
 
 MAX_CONTAINERS=app.config['MAX_CONTAINERS']
+
+#Server Address for vm configuration 
+ONOS_URL=f"http://{app.config['ONOS_IP']}:{app.config['ONOS_PORT']}"
+ONOS_AUTH_USERNAME = app.config['ONOS_AUTH_USERNAME']
+ONOS_AUTH_PASSWORD = app.config['ONOS_AUTH_PASSWORD']
+
+
+# Configuration of BackgroundScheduler
+scheduler = BackgroundScheduler()
+scheduler.start()
+scheduler.add_job(lambda: flow_cleanup(ONOS_URL, ONOS_AUTH_USERNAME, ONOS_AUTH_PASSWORD, CONTAINER_SERVER_PORT), trigger=IntervalTrigger(seconds=15))
+
+
+# ********[ API ]********
+@app.route('/tinmanager/testflow', methods=['POST'])
+def test_flow():
+
+    data = request.json
+    src_ip = data.get('src_ip')
+    dst_ip = data.get('dst_ip')
+    src_port = data.get('src_port')
+    dst_port = data.get('dst_port')
+    ovs_id=data.get('ovs_id')
+
+
+    payload= {
+        "flows": [
+            {
+                "priority": 50000,
+                "timeout": 0,
+                "isPermanent":"true",
+                "deviceId": f"{ovs_id}",
+                "treatment": {
+                    "instructions": [
+                        {
+                            "type": "OUTPUT",
+                            "port": "NORMAL"
+                        }
+                    ]
+                },
+                "selector": {
+                    "criteria": [
+                        {
+                            "type": "ETH_TYPE",
+                            "ethType": "0x0800"
+                        },
+                        {
+                            "type": "IPV4_SRC",
+                            "ip": f"{src_ip}/32"
+                        },
+                        {
+                            "type": "IPV4_DST",
+                            "ip": f"{dst_ip}/32"
+                        }
+                       
+                    ]
+                }
+            }
+        ]
+    }
+
+
+
+    username = "onos"
+    password = "rocks"
+
+
+    url= "http://localhost:8181/onos/v1/flows"
+    response=requests.post(url,json=payload,auth=(username, password))
+    print (response.json())
+    
+    return jsonify({"message":  "Flow successfully created!"}), 201
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -163,6 +250,23 @@ def add_flow():
 @app.route('/tinmanager/ping', methods=['GET'])
 def ping():
     return jsonify("server running"), 200
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

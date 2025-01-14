@@ -12,6 +12,13 @@ class Config:
 
     MAX_CONTAINERS=5
 
+
+    ONOS_IP='127.0.0.1' #ip address for onos
+    ONOS_PORT='8181'
+
+    ONOS_AUTH_USERNAME = "onos"
+    ONOS_AUTH_PASSWORD = "rocks"
+
 class ProductionConfig(Config):
     DEBUG = False
     ENV = 'production'

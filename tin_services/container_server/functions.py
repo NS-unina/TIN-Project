@@ -160,10 +160,12 @@ def count_container(containerCollection):
 def get_container_by_vm_port(vm_port, collection):
 
     item = collection.find_one({"vm_name": hostname , "services.vm_port":vm_port }, {"_id": 0 , "name": 1})
+    print("item:",item)
     if (not item):
+        print("item not found")
         raise ItemNotFound (f"Can not find container with vm_port {vm_port}.", error_code=404)
     
-    print(item)    
+    #print(item)    
     return item  
 
 

@@ -126,7 +126,7 @@ def delete_container(container_name):
     try:
         #Check if name already exists
         if not check_if_value_field_exists("name", container_name, containerCollection):
-            return jsonify({'error': f"Container name {container_name} doesn't exists."})
+            return jsonify({'error': f"Container name {container_name} doesn't exists."}),404
 
         #delete container
         container = client.containers.get(container_name)
@@ -137,12 +137,13 @@ def delete_container(container_name):
         return jsonify({"message": f"Container '{container_name}' successfully deleted!"}), 200
     
     except ItemNotFound as e:
-        return jsonify ({'error': f"{e.message}"}), e.error_code
+        return jsonify ({'error': f"{e.message}"}), 404
     except pymongo.errors.ConnectionFailure as e:
         return jsonify({'error': 'Connection to database failed.'}), 500
     except docker.errors.NotFound:
         return jsonify({'Container not found': f'{container_name}'}), 404
-    
+    except Exception as e :
+        return jsonify ({'error': f"{e}"})
 
 @app.route('/container/delete/byport/<vm_port>', methods=['DELETE'])
 def delete_container_by_port(vm_port):
@@ -157,13 +158,14 @@ def delete_container_by_port(vm_port):
         delete_from_db(container_name,containerCollection)
         return jsonify({"message": f"Container '{container_name}' successfully deleted!"}), 200
 
-
     except ItemNotFound as e:
-        return jsonify ({'error': f"{e.message}"}), e.error_code
+        return jsonify ({'error': f"{e.message}"}), 404
     except pymongo.errors.ConnectionFailure as e:
         return jsonify({'error': 'Connection to database failed.'}), 500
     except docker.errors.NotFound:
         return jsonify({'Container not found': f'{container_name}'}), 404
+    except Exception as e:
+        return jsonify ({'error': f"{e}"})
     
      
 @app.route('/container/list', methods=['GET'])

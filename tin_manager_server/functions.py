@@ -247,38 +247,54 @@ def flow_cleanup(ONOS_URL, ONOS_AUTH_USERNAME, ONOS_AUTH_PASSWORD, CONTAINER_SER
             new_flows = response.json()
         else:
             print("Flow list not obtained.", error_code=response.status_code)
-
         #Create dictionary
         new_packet_count={}
         for flow in new_flows["flows"]:
-            if (flow["appId"] == "org.onosproject.rest" and  flow["priority"] >1 ):
+            if (flow["appId"] == "org.onosproject.rest" and  flow["priority"] >1 and flow.get("treatment", {}).get("instructions", [{}])[0].get("subtype")):
+                
+                #andata
                 if(flow["treatment"]["instructions"][0]["subtype"]=="TCP_DST"):
                     port=flow["treatment"]["instructions"][0]["tcpPort"]
+                    ip=flow["treatment"]["instructions"][1]["ip"]
                 elif(flow["treatment"]["instructions"][0]["subtype"]=="UDP_DST"):
                     port=flow["treatment"]["instructions"][0]["udpPort"]
+                    ip=flow["treatment"]["instructions"][1]["ip"]
 
-                new_packet_count[flow["id"]]={"packets":flow["packets"], "ip":flow["treatment"]["instructions"][1]["ip"], "port":port, "device_id": flow["deviceId"]}
+                #ritorno
+                elif(flow["treatment"]["instructions"][0]["subtype"]=="TCP_SRC"):
+                    port=flow["selector"]["criteria"][4]["tcpPort"]
+                    ip=flow["selector"]["criteria"][2]["ip"].split('/')[0]
+                elif(flow["treatment"]["instructions"][0]["subtype"]=="UDP_SRC"):
+                    port=flow["selector"]["criteria"][4]["udpPort"]
+                    ip=flow["selector"]["criteria"][2]["ip"].split('/')[0]
+    
+
+                print(flow["treatment"]["instructions"][0]["subtype"])
+                print("ip ",ip,"port " ,port)
+                new_packet_count[flow["id"]]={"packets":flow["packets"], "ip": ip, "port":port, "device_id": flow["deviceId"]}
 
         #Verify packet number
         for id in new_packet_count:
             if(old_packet_count.get(id) !=None):
-
+            
                 if(new_packet_count[id]["packets"]>old_packet_count[id]["packets"]):
                     print("packets increased")
-
                 elif(new_packet_count[id]["packets"]==old_packet_count[id]["packets"]):
                     print("packet number equal -> deleting flow ")
-                        
-                    delete_container(new_packet_count[id]["ip"], CONTAINER_SERVER_PORT, new_packet_count[id]["port"])
-
+                    
+                    try:
+                        delete_container(new_packet_count[id]["ip"], CONTAINER_SERVER_PORT, new_packet_count[id]["port"])
+                    except ContainerDeleteError as e:
+                            print(f"Container not deleted {e}.")
+                            
                     delete_flow(ONOS_URL, ONOS_AUTH_USERNAME, ONOS_AUTH_PASSWORD, new_packet_count[id]["device_id"], id)
-
 
             else:
                 print("new flow")
-
-
+        
         old_packet_count=new_packet_count
+
+    
 
 
     except Exception as e:
@@ -295,6 +311,7 @@ def delete_container(vm_ip, CONTAINER_SERVER_PORT, vm_port):
       response=requests.delete(url)
       if (response.status_code == 200):
         response = response.json()
+        print ("Response: ", response)
         return response
       else:
         raise ContainerDeleteError ("Error deleting container.", error_code=response.status_code)
@@ -306,11 +323,12 @@ def delete_flow(ONOS_URL, ONOS_AUTH_USERNAME, ONOS_AUTH_PASSWORD, device_id, flo
     try:
         #Request to onos flow
         url= f"{ONOS_URL}/onos/v1/flows/{device_id}/{flow_id}"
+        print (f"Sending request to '{url}' ...")
         response=requests.delete(url, auth=(ONOS_AUTH_USERNAME,ONOS_AUTH_PASSWORD))
-        if (response.status_code == 200):
-            response = response.json()
-        else:
+        print ("Response: ", response)
+
+        if (response.status_code != 204):
             raise OnosDeleteFlowError (f"Error deleting flow {flow_id}.", error_code=response.status_code)
-    except requests.exceptions.ConnectionError:
-        print("Onos not running.", error_code=503)
+    except requests.exceptions.ConnectionError as e:
+        print(f"error. {e}")
 

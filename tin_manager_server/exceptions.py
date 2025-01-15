@@ -43,3 +43,9 @@ class OnosDeleteFlowError(requests.exceptions.ConnectionError):
         self.message = message
         self.error_code = error_code
         super().__init__(message)
+
+class CreateFlowFailed(requests.exceptions.ConnectionError):
+    def __init__(self, message, error_code=None):
+        self.message = message
+        self.error_code = error_code
+        super().__init__(message)

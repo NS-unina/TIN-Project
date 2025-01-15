@@ -33,79 +33,7 @@ ONOS_AUTH_PASSWORD = app.config['ONOS_AUTH_PASSWORD']
 # Configuration of BackgroundScheduler
 scheduler = BackgroundScheduler()
 scheduler.start()
-scheduler.add_job(lambda: flow_cleanup(ONOS_URL, ONOS_AUTH_USERNAME, ONOS_AUTH_PASSWORD, CONTAINER_SERVER_PORT), trigger=IntervalTrigger(seconds=15))
-
-
-# ********[ API ]********
-@app.route('/tinmanager/testflow', methods=['POST'])
-def test_flow():
-
-    data = request.json
-    src_ip = data.get('src_ip')
-    dst_ip = data.get('dst_ip')
-    src_port = data.get('src_port')
-    dst_port = data.get('dst_port')
-    ovs_id=data.get('ovs_id')
-
-
-    payload= {
-        "flows": [
-            {
-                "priority": 50000,
-                "timeout": 0,
-                "isPermanent":"true",
-                "deviceId": f"{ovs_id}",
-                "treatment": {
-                    "instructions": [
-                        {
-                            "type": "OUTPUT",
-                            "port": "NORMAL"
-                        }
-                    ]
-                },
-                "selector": {
-                    "criteria": [
-                        {
-                            "type": "ETH_TYPE",
-                            "ethType": "0x0800"
-                        },
-                        {
-                            "type": "IPV4_SRC",
-                            "ip": f"{src_ip}/32"
-                        },
-                        {
-                            "type": "IPV4_DST",
-                            "ip": f"{dst_ip}/32"
-                        }
-                       
-                    ]
-                }
-            }
-        ]
-    }
-
-
-
-    username = "onos"
-    password = "rocks"
-
-
-    url= "http://localhost:8181/onos/v1/flows"
-    response=requests.post(url,json=payload,auth=(username, password))
-    print (response.json())
-    
-    return jsonify({"message":  "Flow successfully created!"}), 201
-
-
-
-
-
-
-
-
-
-
-
+scheduler.add_job(lambda: flow_cleanup(ONOS_URL, ONOS_AUTH_USERNAME, ONOS_AUTH_PASSWORD, CONTAINER_SERVER_PORT), trigger=IntervalTrigger(seconds=30))
 
 
 
@@ -136,114 +64,64 @@ def add_flow():
         #Get vmList
         vmList = get_vm_list(VM_SERVER_URL)
         print(vmList)
-
-        #Get containerList by service_port
         if not vmList:
             print ("No available vms.")
+            create_vm(VM_SERVER_URL)
 
+        #Select container master (first vm that is running)
         for vm in vmList:
-            if vm["status"] == "running":
+            if vm["status"] == "running":                               #[FIXME] e se la vm è accesa ma container configurator non è running?
                 ip_container_master = vm["ip"]
                 break
+        #[TODO] ACCENDI UNA VM spenta se ho vm list ma non ho ipcontainer master
 
-        #[TODO] ACCENDI UNA VM spenta
-
-
-        print (f"Requesting available container list from {ip_container_master}:{CONTAINER_SERVER_PORT} ...")
+        #Get containerList by service_port
         container = get_container_by_service (f"http://{ip_container_master}:{CONTAINER_SERVER_PORT}", dst_port)
         print (container)
         
-        
-        #Check if there is a honeypot available
-        if  not container :
+        if not container :
            
             #Find if there is a vm available on which to create the container
-            print (f"Requesting number of container on each vm from {ip_container_master}:{CONTAINER_SERVER_PORT} ...")
+            print (f"Requesting number of container on each vm ...")
             containerCount = get_container_count(f"http://{ip_container_master}:{CONTAINER_SERVER_PORT}")
             print (containerCount)
 
-            chosen_vm=None
-            for vm in vmList:
-                if containerCount and (containerCount[vm["name"]] >= MAX_CONTAINERS):
-                        print("vm is full: ",vm["name"])
-                        continue
-                elif(vm["status"]!="running") : 
-                    continue
-                else:
-                    print("chosen vm: ",vm["name"])
-                    chosen_vm=vm
-                    break
-
+            chosen_vm = choose_vm (vmList, containerCount, MAX_CONTAINERS)
             if (not chosen_vm):
-                print ("no available vm found, creating vm")
+                print ("No available vm found. Creating vm ...")
                 #chosen_vm=create_vm(VM_SERVER_URL)
+            print("Chosen vm: ", chosen_vm)
 
-               
-            print ("Creating container...")
-            container = create_container(chosen_vm["ip"],CONTAINER_SERVER_PORT,dst_port)
+            #Creating container 
+            print ("Creating container ...")
+            #container = create_container(chosen_vm["ip"],CONTAINER_SERVER_PORT,dst_port)
 
 
         #Set flow ip and port with the found container
         vm_ip_mac= get_vm_ip_mac_by_name (container["vm_name"], vmList)
         flow_ip=vm_ip_mac["ip"]
         flow_mac=vm_ip_mac["mac"]
-        for service in container["services"]:
+        for service in container["services"]:               #[FIXME] con cowrie services non esce come vettore
             if(service["service_port"]==dst_port):
                 flow_port=service["vm_port"]
         
         #Creating flow
         print (f"Creating flow: ip '{flow_ip}', port '{flow_port}', mac '{flow_mac}'")
-        #create_flow(....,flow_ip,flow_port)
+        #create_flow_tcp(ONOS_URL, ONOS_AUTH_USERNAME, ONOS_AUTH_PASSWORD, ovs_id, src_ip, dst_ip, dst_port, container_ip, container_mac,container_vm_port)
 
         return jsonify({"message":  "Flow successfully created!"}), 201
     
     except (VmListError, ContainerListError) as e:
         return jsonify({'error': f'{e.message}'}), 500
-    except ServerNotRunning as e:
+    except (CreateFlowFailed, CreateVmFailed, CreateContainerFailed) as e:
         return jsonify({'error': f'{e.message}'}), 500
-    except CreateContainerFailed as e:
-        return jsonify({'error': f'{e.message}'}), 500
+    except requests.exceptions.ConnectionError as e:
+        return jsonify({'error': f'{e}'}), 500
+    except Exception as e:
+        return jsonify({'error': f'{e}'}), 500
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-    # try:
-
-    #     honeypot=get_available_container(service,HoneyfarmList)
-        
-    #     if (not honeypot):
-    #         honeyfarm=get_available_vm(vms_list,MAX_CONTAINERS)
-
-    #         if (not honeyfarm):
-    #             print ("VM not found. Creating vm..")
-    #             honeyfarm=create_vm(VM_SERVER_URL)          
-                     
-    #         print("chosen vm:", honeyfarm["ip"])
-
-    #         honeypot=create_container(honeyfarm["ip"],image) #image devo sceglierla in base al servizio 
-        
-    #     print ("chosen honeypot: ",honeypot["ip"],honeypot["port"])
-
-    #     #create_flow(....,honeypot["ip"],"honeypot["port"]")
-
-    #     return jsonify({"message":  "Flow successfully created!"}), 201
-    
-    # except Exception as e:
-    #     return jsonify({'error': f'Error {e}'}), 500
-
- 
 
 
 
@@ -252,25 +130,64 @@ def ping():
     return jsonify("server running"), 200
 
 
+# @app.route('/tinmanager/testflow', methods=['POST'])
+# def test_flow():
+
+#     data = request.json
+#     src_ip = data.get('src_ip')
+#     dst_ip = data.get('dst_ip')
+#     src_port = data.get('src_port')
+#     dst_port = data.get('dst_port')
+#     ovs_id=data.get('ovs_id')
+
+
+#     payload= {
+#         "flows": [
+#             {
+#                 "priority": 50000,
+#                 "timeout": 0,
+#                 "isPermanent":"true",
+#                 "deviceId": f"{ovs_id}",
+#                 "treatment": {
+#                     "instructions": [
+#                         {
+#                             "type": "OUTPUT",
+#                             "port": "NORMAL"
+#                         }
+#                     ]
+#                 },
+#                 "selector": {
+#                     "criteria": [
+#                         {
+#                             "type": "ETH_TYPE",
+#                             "ethType": "0x0800"
+#                         },
+#                         {
+#                             "type": "IPV4_SRC",
+#                             "ip": f"{src_ip}/32"
+#                         },
+#                         {
+#                             "type": "IPV4_DST",
+#                             "ip": f"{dst_ip}/32"
+#                         }
+                       
+#                     ]
+#                 }
+#             }
+#         ]
+#     }
 
 
 
+#     username = "onos"
+#     password = "rocks"
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#     url= "http://localhost:8181/onos/v1/flows"
+#     response=requests.post(url,json=payload,auth=(username, password))
+#     print (response.json())
+    
+#     return jsonify({"message":  "Flow successfully created!"}), 201
 
 
 #Swagger docs api
@@ -285,6 +202,7 @@ swagger_ui_blueprint = get_swaggerui_blueprint(
     }
 )
 app.register_blueprint(swagger_ui_blueprint, url_prefix=SWAGGER_URL)
+
 
 #Request for documentation
 @app.route(f'/{API_DOCS_PATH}')

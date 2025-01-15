@@ -59,19 +59,12 @@ def search_image_by_service (service_port, collection):
 def search_container_by_service (service_port, collection):
     pipeline = [
         {
-            "$match": {
-                 "$elemMatch": {
-                    "service_port": f"{service_port}",
-                    "busy":"False" 
-                }
-            }
-        },
-        {
             "$unwind": "$services"
         },
         {
             "$match": {
-                "services.service_port": f"{service_port}"
+                "services.service_port": f"{service_port}",
+                "services.busy": "False"
             }
         },
         {

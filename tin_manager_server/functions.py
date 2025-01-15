@@ -12,6 +12,7 @@ def get_vm_list (VM_SERVER_URL):
   try:
       #Request to vm_configurator
       url= f"{VM_SERVER_URL}/vm/list"
+      print (f"Sending request to '{url}' ...")
       response=requests.get(url)
       if (response.status_code == 200):
           vms_list = response.json()
@@ -27,6 +28,7 @@ def get_container_by_service (CONTAINER_SERVER_URL, service_port):
   try:
       #Request to vm_configurator
       url= f"{CONTAINER_SERVER_URL}/container/{service_port}"
+      print (f"Sending request to '{url}' ...")
       response=requests.get(url)
       if (response.status_code == 200):
           containerList = response.json()
@@ -41,6 +43,7 @@ def get_container_count(CONTAINER_SERVER_URL):
   try:
       #Request to vm_configurator
       url= f"{CONTAINER_SERVER_URL}/container/count"
+      print (f"Sending request to '{url}' ...")
       response=requests.get(url)
       if (response.status_code == 200):
           containerCount = response.json()
@@ -54,7 +57,7 @@ def get_container_count(CONTAINER_SERVER_URL):
 def create_vm(VM_SERVER_URL):
   try:
     url= f"{VM_SERVER_URL}/vm/create"
-
+    print (f"Sending request to '{url}' ...")
     response=requests.post(url,json={}) 
     if (response.status_code == 201):
         print("Vm created successfully!")
@@ -69,11 +72,9 @@ def create_vm(VM_SERVER_URL):
 def create_container(vm_ip,CONTAINER_SERVER_PORT,service_port): 
 
     url= f"http://{vm_ip}:{CONTAINER_SERVER_PORT}/container/create"
-    
+    print (f"Sending request to '{url}' ...")
     payload={"service_port":f"{service_port}"}
-    headers = {"Content-Type": "application/json"}
-    
-    response=requests.post(url,json=payload,headers=headers)
+    response=requests.post(url,json=payload,headers={"Content-Type": "application/json"})
 
     if (response.status_code == 201):
         print("Container created successfully!")
@@ -88,149 +89,149 @@ def get_vm_ip_mac_by_name (vm_name, vmList):
         if vm["name"] == vm_name:
             return {"ip":vm["ip"],"mac":vm["mac"]} 
 
+def choose_vm(vmList, containerCount, MAX_CONTAINERS):
+    chosen_vm=None
+    for vm in vmList:
+        if containerCount and (containerCount[vm["name"]] >= MAX_CONTAINERS):
+            print("vm is full: ",vm["name"])
+            continue
+        elif(vm["status"]!="running") : 
+            continue
+        else:
+            print("chosen vm: ",vm["name"])
+            chosen_vm=vm
+            break
+    return chosen_vm
 
 
-def create_flow(ovs_id,attacker_ip,server_ip,server_port,container_ip,container_mac,container_port):
+def create_flow_tcp(ONOS_URL, ONOS_AUTH_USERNAME, ONOS_AUTH_PASSWORD, ovs_id,attacker_ip,forbidden_ip,forbidden_port,container_ip,container_mac,container_vm_port):
         
+
+    tcp_flow_attacker_honeypot={
+    "flows": [
+        {
+            "priority": 50000,
+            "timeout": 0,
+            "isPermanent": "true",
+            "deviceId": ovs_id,
+            "treatment": {
+                "instructions": [
+                    {
+                        "type": "L4MODIFICATION", 
+                        "subtype":"TCP_DST", 
+                        "tcpPort":container_vm_port 
+                    },
+                    {
+                        "type": "L3MODIFICATION",
+                        "subtype": "IPV4_DST",
+                        "ip": container_ip
+                    },
+                    {
+                        "type": "L2MODIFICATION",
+                        "subtype": "ETH_DST",
+                        "mac": container_mac
+                    },
+                    {
+                        "type": "OUTPUT",
+                        "port": "NORMAL"
+                    }
+                ]
+            },
+            "selector": {
+                "criteria": [
+                    {
+                        "type": "ETH_TYPE",
+                        "ethType": "0x0800"
+                    },
+                    {
+                        "type": "IP_PROTO",
+                        "protocol": 6
+                    },
+                    {
+                        "type": "IPV4_SRC",
+                        "ip": attacker_ip+"/32"
+                    },
+                    {
+                        "type": "IPV4_DST",
+                        "ip": forbidden_ip+"/32"
+                    },
+                    {   
+                        "type":"TCP_DST", 
+                        "tcpPort":forbidden_port
+                    }
+
+                ]
+            }
+              }
+          ]
+      }
+
+    #Request to onos flow
+    url= f"{ONOS_URL}/onos/v1/flows"
+    response=requests.post(url,json=tcp_flow_attacker_honeypot, auth=(ONOS_AUTH_USERNAME,ONOS_AUTH_PASSWORD))
+    if (response.status_code == 200):
+        print (response.json())
+    else:
+        raise CreateFlowFailed ("Error: Flow { attacker -> honeypot } not created.", error_code=response.status_code)
+
+
+    tcp_flow_honeypot_attacker={
+    "flows": [
+        {
+            "priority": 50000,
+            "timeout": 0,
+            "isPermanent": "true",
+            "deviceId": ovs_id,
+            "treatment": {
+                "instructions": [
+                  {
+                        "type": "L4MODIFICATION", 
+                        "subtype":"TCP_SRC", 
+                        "tcpPort": forbidden_port
+                    },
+                    {
+                        "type": "L3MODIFICATION",
+                        "subtype": "IPV4_SRC",
+                        "ip": forbidden_ip
+                    },
+                    {
+                        "type": "OUTPUT",
+                        "port": "NORMAL"
+                    }
+                ]
+            },
+            "selector": {
+                "criteria": [
+                    {
+                        "type": "ETH_TYPE",
+                        "ethType": "0x0800"
+                    },
+                    {
+                        "type": "IPV4_SRC",
+                        "ip": container_ip+"/32"
+                    },
+                    {
+                        "type": "IPV4_DST",
+                        "ip": attacker_ip+"/32"
+                    },
+                    {   
+                        "type":"TCP_SRC", 
+                        "tcpPort": container_vm_port
+                    }
+
+                ]
+            }
+        }
+        ]
+    }
     
-    #ricordare di fare 2 flow (andata e ritorno) e l'elenco dei flow creati
-    #cancellazione basata su lastseen di onos che fa partire pure la cancellazione dei container
-
-  try:
-      #Request to vm_configurator
-      url= f"{VM_SERVER_URL}/vm/list"
-      response=requests.get(url)
-      if (response.status_code == 200):
-          vms_list = response.json()
-          return vms_list
-      else:
-          raise VmListError ("Vm list not obtained.", error_code=response.status_code)
-  except requests.exceptions.ConnectionError:
-      raise ServerNotRunning ("VM Server not running. Can not configure vms list.", error_code=503)
-
-
-    # tcp_flow_attacker_honeypot={
-    # "flows": [
-    #     {
-    #         "priority": 50000,
-    #         "timeout": 0,
-    #         "isPermanent": "true",
-    #         "deviceId": ovs_id,
-    #         "treatment": {
-    #             "instructions": [
-    #                 {
-    #                     "type": "L4MODIFICATION", 
-    #                     "subtype":"TCP_DST", 
-    #                     "tcpPort":container_port 
-    #                 },
-    #                 {
-    #                     "type": "L3MODIFICATION",
-    #                     "subtype": "IPV4_DST",
-    #                     "ip": container_ip
-    #                 },
-    #                 {
-    #                     "type": "L2MODIFICATION",
-    #                     "subtype": "ETH_DST",
-    #                     "mac": container_mac
-    #                 },
-    #                 {
-    #                     "type": "OUTPUT",
-    #                     "port": "NORMAL"
-    #                 }
-    #             ]
-    #         },
-    #         "selector": {
-    #             "criteria": [
-    #                 {
-    #                     "type": "ETH_TYPE",
-    #                     "ethType": "0x0800"
-    #                 },
-    #                 {
-    #                     "type": "IP_PROTO",
-    #                     "protocol": 6
-    #                 },
-    #                 {
-    #                     "type": "IPV4_SRC",
-    #                     "ip": attacker_ip+"/32"
-    #                 },
-    #                 {
-    #                     "type": "IPV4_DST",
-    #                     "ip": server_ip+"/32"
-    #                 },
-    #                 {   
-    #                     "type":"TCP_DST", 
-    #                     "tcpPort":server_port
-    #                 }
-
-    #             ]
-    #         }
-    #           }
-    #       ]
-    #   }
-
-    # tcp_flow_honeypot_attacker={
-    # "flows": [
-    #     {
-    #         "priority": 50000,
-    #         "timeout": 0,
-    #         "isPermanent": "true",
-    #         "deviceId": ovs_id,
-    #         "treatment": {
-    #             "instructions": [
-    #                 {
-    #                     "type": "L3MODIFICATION",
-    #                     "subtype": "IPV4_SRC",
-    #                     "ip": server_ip
-    #                 },
-    #                 {
-    #                     "type": "L4MODIFICATION", 
-    #                     "subtype":"TCP_SRC", 
-    #                     "tcpPort": server_port 
-    #                 },
-    #                 {
-    #                     "type": "OUTPUT",
-    #                     "port": "NORMAL"
-    #                 }
-    #             ]
-    #         },
-    #         "selector": {
-    #             "criteria": [
-    #                 {
-    #                     "type": "ETH_TYPE",
-    #                     "ethType": "0x0800"
-    #                 },
-    #                 {
-    #                     "type": "IPV4_SRC",
-    #                     "ip": container_ip+"/32"
-    #                 },
-    #                 {
-    #                     "type": "IPV4_DST",
-    #                     "ip": attacker_ip+"/32"
-    #                 },
-    #                 {   
-    #                     "type":"TCP_SRC", 
-    #                     "tcpPort": container_port
-    #                 }
-
-    #             ]
-    #         }
-    #           }
-    #       ]
-    #   }
-    
-    
-    
-    
-    
-    
-    # print(tcp_flow_attacker_honeypot)
-    # print("------------------------")
-    # print(tcp_flow_honeypot_attacker)
-
-    # #send request to onos
-    
-
-
+    #Request to onos flow
+    url= f"{ONOS_URL}/onos/v1/flows"
+    response=requests.post(url,json=tcp_flow_honeypot_attacker, auth=(ONOS_AUTH_USERNAME,ONOS_AUTH_PASSWORD))
+    if (response.status_code == 200):
+        print (response.json())
+    else:
+        raise CreateFlowFailed ("Error: Flow { honeypot -> attacker } not created.", error_code=response.status_code)
 
 
 

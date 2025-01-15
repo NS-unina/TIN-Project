@@ -128,7 +128,7 @@ def sync_vm(VM_PATH, collection):
                 v = vagrant.Vagrant(vm_path)
                 status = v.status()
                 update_item_vm_list(vm_name, "status", status[0].state, collection)
-                print ("Updated vms status")
+                print (f"Updated vm '{vm_name}' status")
 
         except VagrantfileNotFound as e:
             print ({"Error updating vms status": f"{e.message}"})

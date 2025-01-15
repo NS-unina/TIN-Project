@@ -109,7 +109,7 @@ def create_container():
         #Add item to collection
         container=create_item_list(container, all_services, containerCollection)
 
-        return jsonify({"message": f"Container successfully created!","container":container}), 201
+        return jsonify({"message": f"Container successfully created!","container": container}), 201
 
     except FailedInsertion as e:
         return jsonify ({'error': f"{e.message}"}), 500
@@ -182,7 +182,7 @@ def read_container():
     
 
 #get container by service -returns the top priority container with the specified service
-@app.route('/container/<service_port>')
+@app.route('/container/<service_port>', methods=['GET'])
 def get_container_by_service(service_port):
     try:
         container = search_container_by_service (service_port, containerCollection)

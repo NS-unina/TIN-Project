@@ -39,7 +39,7 @@ scheduler.add_job(lambda: flow_cleanup(ONOS_URL, ONOS_AUTH_USERNAME, ONOS_AUTH_P
 
 
 # ********[ API ]********
-@app.route('/tinmanager/addflow', methods=['POST'])
+@app.route('/tinmanager/tcp/addflow', methods=['POST'])
 def add_flow():
     data = request.json
     src_ip = data.get('src_ip')
@@ -101,12 +101,12 @@ def add_flow():
         vm_ip_mac= get_vm_ip_mac_by_name (container["vm_name"], vmList)
         flow_ip=vm_ip_mac["ip"]
         flow_mac=vm_ip_mac["mac"]
-        for service in container["services"]:               #[FIXME] con cowrie services non esce come vettore
+        for service in container["services"]:
             if(service["service_port"]==dst_port):
                 flow_port=service["vm_port"]
         
         #Creating flow
-        print (f"Creating flow: ip '{flow_ip}', port '{flow_port}', mac '{flow_mac}'")
+        print (f"Creating tcp flow: ip '{flow_ip}', port '{flow_port}', mac '{flow_mac}'")
         #create_flow_tcp(ONOS_URL, ONOS_AUTH_USERNAME, ONOS_AUTH_PASSWORD, ovs_id, src_ip, dst_ip, dst_port, container_ip, container_mac,container_vm_port)
 
         return jsonify({"message":  "Flow successfully created!"}), 201
@@ -117,6 +117,25 @@ def add_flow():
         return jsonify({'error': f'{e.message}'}), 500
     except requests.exceptions.ConnectionError as e:
         return jsonify({'error': f'{e}'}), 500
+    except Exception as e:
+        return jsonify({'error': f'{e}'}), 500
+
+
+
+
+@app.route('/tinmanager/containerlimit', methods=['POST'])
+def containerLimit():
+    global MAX_CONTAINERS
+
+    try:
+        data = request.json
+
+        if not data.get('max_container'):
+            return jsonify({"error": "'max_container' field is needed"}), 400
+            
+        MAX_CONTAINERS = data.get('max_container')
+        return jsonify(f"Max num container modified to {MAX_CONTAINERS}."), 200
+    
     except Exception as e:
         return jsonify({'error': f'{e}'}), 500
 

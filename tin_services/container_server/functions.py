@@ -13,6 +13,7 @@ def sync_container(collection):
     try:
         for container in client.containers.list(all=True):
             update_item_list(container.name, "status", container.status, collection)
+            print (f"Updated {container.name}.")
     except ContainerNotFound as e:
         print ({"Error updating container status": f"{e.message}"})
     except ItemNotModified as e:
@@ -64,14 +65,27 @@ def search_container_by_service (service_port, collection):
         {
             "$match": {
                 "services.service_port": f"{service_port}",
-                "services.busy": "False"
+                "services.busy": "False",
+                "status":"running"
             }
         },
         {
             "$sort": {"services.priority": -1}  # Sort by priority descending
         },
         {
-            "$limit": 1  # Take the top result
+        '$group': {
+            '_id': '$_id',
+            'doc': {'$first': '$$ROOT'},
+            'service': {'$first': '$services'}
+            }
+        },
+        # Replace root to get the original document structure
+        {
+            '$replaceRoot': {
+                'newRoot': {
+                    '$mergeObjects': ['$doc', {'services': ['$service']}]
+                }
+            }
         }
         ]
     

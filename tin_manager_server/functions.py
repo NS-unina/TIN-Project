@@ -92,7 +92,7 @@ def get_vm_ip_mac_by_name (vm_name, vmList):
 def choose_vm(vmList, containerCount, MAX_CONTAINERS):
     chosen_vm=None
     for vm in vmList:
-        if containerCount and (containerCount[vm["name"]] >= MAX_CONTAINERS):
+        if containerCount.get(vm["name"]) and (containerCount.get(vm["name"]) >= MAX_CONTAINERS):
             print("vm is full: ",vm["name"])
             continue
         elif(vm["status"]!="running") : 

@@ -3,7 +3,9 @@ import { selectedVm } from "../../main.js";
 </script>
 
 <template>
+
   <div class="container">
+
     <div class="row">
       <div class="col-sm-10">
         <h1>Virtual Machines</h1>
@@ -17,80 +19,105 @@ import { selectedVm } from "../../main.js";
           Add VM
         </button>
         <br /><br />
+        <ul v-if="vms && vms.length > 0">
+
         <table class="table table-hover">
           <thead>
             <tr>
               <th scope="col">Name</th>
               <th scope="col">Status</th>
+              <th scope="col">Controls</th>
               <th scope="col">Modify</th>
               <th scope="col">IP</th>
+              <th scope="col">MAC</th>
+              <th scope="col">CPUS</th>
+              <th scope="col">RAM</th>
+
+
+
               <th></th>
             </tr>
+
           </thead>
 
           <tbody>
-            <tr v-for="(vm, index) in vms" :key="index">
-              <td>{{ vm.name }}</td>
-              <td>
-                <div style="display: flex; gap: 5px; align-items: center">
-                  {{ vm.status }}
-                  <div>
+              <tr v-for="(vm, index) in vms" :key="vm.id">
+                
+                <td>{{ vm.name }}</td>
+                <td>
+                  <div style="display: flex; gap: 5px; align-items: center">
+                    {{ vm.status }}
+                  </div>
+                </td>
+
+                <td>
+                  <div style="display: flex;">
+                    <div>
+                      <button
+                        type="button"
+                        class="btn btn-link btn-success"
+                        @click="handleStartVm(vm)"
+                      >
+                        <i
+                          class="icon-play"
+                          style="font-style: normal; font-size: 20px"
+                        ></i>
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-danger btn-link"
+                        @click="handleStopVm(vm)"
+                      >
+                        <i
+                          class="icon-stop"
+                          style="font-style: normal; font-size: 20px"
+                        ></i>
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-warning btn-link"
+                        @click="handleReloadVm(vm)"
+                      >
+                        <i
+                          class="icon-refresh-00"
+                          style="font-style: normal; font-size: 20px"
+                        ></i>
+                      </button>
+                    </div>
+                  </div>
+                </td>
+
+                <td>
+                  <div class="btn-group" role="group">
                     <button
                       type="button"
-                      class="btn btn-link btn-success"
-                      @click="handleStartVm(vm)"
+                      class="btn btn-warning btn-sm"
+                      @click="(selectedVm.vmId = vm.name), toggleUpdateVmModal()"
                     >
-                      <i
-                        class="icon-play"
-                        style="font-style: normal; font-size: 20px"
-                      ></i>
+                      Update
                     </button>
                     <button
                       type="button"
-                      class="btn btn-danger btn-link"
-                      @click="handleStopVm(vm)"
+                      class="btn btn-danger btn-sm width-150px"
+                      @click="handleDeleteVm(vm)"
                     >
-                      <i
-                        class="icon-stop"
-                        style="font-style: normal; font-size: 20px"
-                      ></i>
-                    </button>
-                    <button
-                      type="button"
-                      class="btn btn-warning btn-link"
-                      @click="handleReloadVm(vm)"
-                    >
-                      <i
-                        class="icon-refresh-00"
-                        style="font-style: normal; font-size: 20px"
-                      ></i>
+                      Delete
                     </button>
                   </div>
-                </div>
-              </td>
+                </td>
+                <td>{{ vm.ip }}</td>
+                <td>{{ vm.mac }}</td>
+                <td>{{ vm.cpu }}</td>
+                <td>{{ vm.ram }} MB</td>
 
-              <td>
-                <div class="btn-group" role="group">
-                  <button
-                    type="button"
-                    class="btn btn-warning btn-sm"
-                    @click="(selectedVm.vmId = vm.name), toggleUpdateVmModal()"
-                  >
-                    Update
-                  </button>
-                  <button
-                    type="button"
-                    class="btn btn-danger btn-sm width-150px"
-                    @click="handleDeleteVm(vm)"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </td>
-              <td>{{ vm.ip }}</td>
-            </tr>
+
+              </tr>
           </tbody>
+
         </table>
+
+      </ul><p v-else>No VMs found.</p>
+
       </div>
     </div>
 
@@ -322,7 +349,8 @@ export default {
       axios
         .get(path)
         .then((res) => {
-          this.vms = res.data.vms;
+          this.vms = res.data;
+          console.log(res.data)
         })
         .catch((error) => {
           console.error(error);
@@ -432,7 +460,7 @@ export default {
       this.startVm(vm.name);
     },
     startVm(vmID) {
-      const path = `http://localhost:5000/start/${vmID}`;
+      const path = `http://localhost:5000/vm/start/${vmID}`;
       axios
         .post(path)
         .then(() => {
@@ -449,7 +477,7 @@ export default {
       this.stopVm(vm.name);
     },
     stopVm(vmID) {
-      const path = `http://localhost:5000/stop/${vmID}`;
+      const path = `http://localhost:5000/vm/stop/${vmID}`;
       axios
         .post(path)
         .then(() => {

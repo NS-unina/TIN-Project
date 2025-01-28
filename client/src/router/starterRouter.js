@@ -7,11 +7,15 @@ const Dashboard = () =>
   import(/* webpackChunkName: "dashboard" */ "@/pages/Dashboard.vue");
 
 const VMS = () =>
-  import(/* webpackChunkName: "containers" */ "@/layout/starter/SamplePage.vue");
+  import(/* webpackChunkName: "vms" */ "@/layout/starter/SamplePage.vue");
 
 
 const Container = () =>
   import(/* webpackChunkName: "containers" */ "@/layout/starter/ContainerPage.vue");
+
+const Services = () =>
+  import(/* webpackChunkName: "services" */ "@/layout/starter/ServicesPage.vue");
+
 
 
 Vue.use(Router);
@@ -38,6 +42,11 @@ export default new Router({
           path: "containers",
           name: "containers",
           components: { default: Container },
+        },
+        {
+          path: "services",
+          name: "services",
+          components: { default: Services },
         },
       ],
     },

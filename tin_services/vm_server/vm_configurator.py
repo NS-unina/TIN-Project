@@ -305,7 +305,7 @@ def power_vm(vm_name):
 
 
 
-@app.route('/vm/services/priority', methods=['POST'])
+@app.route('/services/priority', methods=['POST'])
 def edit_service_priority():
     data = request.json
     image = data.get ('image')
@@ -331,6 +331,19 @@ def edit_service_priority():
         return jsonify({'error': 'Connection to database failed.'}), 500
     except Exception as e:
         return jsonify({"error": f"Error. {e}"}), 500
+
+
+@app.route('/services/list', methods=['GET'])
+def service_list():
+
+    try:
+        serviceList = list(serviceCollection.find({} ,{"_id": 0}))
+        return jsonify(serviceList), 200
+    except pymongo.errors.ConnectionFailure as e:
+        return jsonify({'error': 'Connection to database failed.'}), 500
+    except Exception as e:
+        return jsonify({"error": f"Error. {e}"}), 500
+
 
 
 

@@ -213,9 +213,6 @@
                             }
                         }
                     },
-                    "404": {
-                        "description": "Not Found: VM list file does not exist"
-                    },
                     "500": {
                         "description": "Internal Server Error: Error while reading VM statuses"
                     }
@@ -331,7 +328,7 @@
                 }
             }
         },
-        "/vm/services/priority": {
+        "/services/priority": {
             "post": {
                 "tags": [
                     "Services"
@@ -381,6 +378,40 @@
                     },
                     "500": {
                         "description": "Internal server error: Generic error or database connection issue."
+                    }
+                }
+            }
+        },
+        "/serivices/list": {
+            "get": {
+                "tags": [
+                    "Services"
+                ],
+                "description": "Reads and returns all the information about all available services.",
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved list of all services",
+                        "examples": {
+                            "application/json": {
+                                "image": "cowrie/cowrie",
+                                "volumes": [],
+                                "environment": [],
+                                "services": [
+                                    {
+                                        "container_port": "2222",
+                                        "name": "ssh",
+                                        "priority": "100",
+                                        "service_port": "22"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error: Error while reading serivices list."
                     }
                 }
             }

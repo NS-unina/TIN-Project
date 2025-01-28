@@ -6,6 +6,16 @@ import { selectedVm } from "../../main.js";
 
   <div class="container">
 
+    <div class="mobile-nav-bar__buttons">
+    <template v-if="!$auth0.isAuthenticated">
+      <SignupButton />
+      <LoginButton />
+    </template>
+    <template v-if="$auth0.isAuthenticated">
+      <LogoutButton />
+    </template>
+  </div>
+
     <div class="row">
       <div class="col-sm-10">
         <h1>Available Services</h1>
@@ -272,10 +282,16 @@ import { selectedVm } from "../../main.js";
     </div>
     <div v-if="activeUpdateVmModal" class="modal-backdrop fade show"></div>
   </div>
+
+  
 </template>
 
 <script>
 import axios from "axios";
+import LoginButton from "@/components/Buttons/login-button.vue";
+import LogoutButton from "@/components/Buttons/logout-button.vue";
+import SignupButton from "@/components/Buttons/signup-button.vue";
+
 
 export default {
   data() {
@@ -472,4 +488,8 @@ export default {
     this.getVMs();
   },
 };
+
+
 </script>
+
+

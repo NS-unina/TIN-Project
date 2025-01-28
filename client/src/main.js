@@ -11,6 +11,7 @@
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
  */
+import { Auth0Plugin } from "./auth0-plugin";
 import Vue from "vue";
 import VueRouter from "vue-router";
 import RouterPrefetch from "vue-router-prefetch";
@@ -25,6 +26,18 @@ import "./registerServiceWorker";
 Vue.use(BlackDashboard);
 Vue.use(VueRouter);
 Vue.use(RouterPrefetch);
+Vue.use(Auth0Plugin, {
+  domain: process.env.VUE_APP_DOMAIN,
+  clientId: process.env.VUE_APP_CLIENT_ID,
+  redirectUri: process.env.VUE_APP_CALLBACK_URL,
+  onRedirectCallback: (appState) => {
+    router.push(
+      appState && appState.targetPath
+        ? appState.targetPath
+        : window.location.pathname
+    );
+  },
+});
 
 export const selectedVm = reactive({
   vmId: "",
@@ -39,3 +52,4 @@ new Vue({
   i18n,
   render: (h) => h(App),
 }).$mount("#app");
+

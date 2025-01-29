@@ -1,5 +1,5 @@
-<template>
-  <button
+<template >
+  <button 
     class="navbar-toggler"
     type="button"
     data-toggle="collapse"

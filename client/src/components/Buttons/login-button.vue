@@ -1,5 +1,6 @@
 <template>
-    <button class="button__login" @click="handleLogin">Log In</button>
+    <button  class="button__login btn btn-round btn-block btn-primary btn-lg" type="submit" @click="handleLogin">Log In</button>
+    
   </template>
   
   <script>
@@ -8,7 +9,7 @@
       handleLogin() {
         this.$auth0.loginWithRedirect({
           appState: {
-            targetPath: "/vm",
+            targetPath: "/dashboard",
           },
         });
       },

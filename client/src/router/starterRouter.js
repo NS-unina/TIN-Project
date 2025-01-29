@@ -17,6 +17,10 @@ const Container = () =>
 const Services = () =>
   import(/* webpackChunkName: "services" */ "@/layout/starter/ServicesPage.vue");
 
+const Login = () =>
+  import(/* webpackChunkName: "login" */ "@/layout/starter/LoginPage.vue");
+
+
 
 
 Vue.use(Router);
@@ -26,13 +30,15 @@ export default new Router({
     {
       path: "/",
       name: "home",
-      redirect: "/dashboard",
+      redirect: "/login",
       component: DashboardLayout,
       children: [
         {
           path: "dashboard",
           name: "dashboard",
           components: { default: Dashboard },
+          beforeEnter: authenticationGuard,
+
         },
         {
           path: "vm",
@@ -53,6 +59,12 @@ export default new Router({
           name: "services",
           components: { default: Services },
           beforeEnter: authenticationGuard,
+
+        }, {
+          path: "login",
+          name: "login",
+          components: { default: Login },
+          meta: { hideMenu: true }
 
         },
       ],

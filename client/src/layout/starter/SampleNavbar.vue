@@ -4,7 +4,9 @@
     :class="{ 'bg-white': showMenu, 'navbar-transparent': !showMenu }"
   >
     <div class="container-fluid">
-      <div class="navbar-wrapper">
+      <div class="navbar-wrapper" v-if="$route?.meta?.hideMenu === undefined"
+        content-id="main-content"
+        type="overlay">
         <div
           class="navbar-toggle d-inline"
           :class="{ toggled: $sidebar.showSidebar }"

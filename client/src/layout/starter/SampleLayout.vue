@@ -1,6 +1,10 @@
 <template>
   <div class="wrapper">
-    <side-bar>
+
+    <side-bar v-if="$route?.meta?.hideMenu === undefined"
+        content-id="main-content"
+        type="overlay">
+        
       <template slot="links">
         <sidebar-link
           to="/dashboard"
@@ -17,10 +21,17 @@
           :name="$t('Containers ')"
           icon="tim-icons icon-molecule-40"
         />
+        <sidebar-link
+          to="/services"
+          :name="$t('Services')"
+          icon="tim-icons icon-components"
+        />
       </template>
     </side-bar>
     <div class="main-panel">
-      <top-navbar></top-navbar>
+      <top-navbar v-if="$route?.meta?.hideMenu === undefined"
+        content-id="main-content"
+        type="overlay"></top-navbar>
 
       <dashboard-content @click.native="toggleSidebar"> </dashboard-content>
 

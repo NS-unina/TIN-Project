@@ -296,10 +296,62 @@ def flow_cleanup(ONOS_URL, ONOS_AUTH_USERNAME, ONOS_AUTH_PASSWORD, CONTAINER_SER
         old_packet_count=new_packet_count
 
     
-
-
+    except requests.exceptions.ConnectionError as e:
+        print(f"Error: Onos not reachable. {e}.")
     except Exception as e:
         print(f"Error {e}.")
+
+
+
+
+
+def vm_manager(ip_container_master, CONTAINER_SERVER_PORT, VM_SERVER_URL, MAX_CONTAINERS, UTILIZATION_LIMIT):
+
+    try:
+        
+        vmList = get_vm_list(VM_SERVER_URL)
+        vmCount=0
+        for vm in vmList:
+            if vm["status"] == "running":
+                vmCount+=1
+
+
+
+        containerCount = get_container_count(f"http://{ip_container_master}:{CONTAINER_SERVER_PORT}")
+        total_slots= (vmCount)*MAX_CONTAINERS
+
+        if total_slots== 0:
+            create_vm(VM_SERVER_URL)
+        else:
+        
+
+            occupied_slots=0
+            for vm in containerCount:
+                occupied_slots+= int(containerCount[vm])
+            
+            print ("Total number of vms: ", vmCount)
+            print ("Maximum number of slots available : ", total_slots)
+            print ("Total number of containers: ", occupied_slots)
+
+            utilization_percentage= (occupied_slots/total_slots)*100
+            print("Total VM Utilization %: ",utilization_percentage)
+
+            if (utilization_percentage > UTILIZATION_LIMIT):
+                print(f"Utilization percentage over the treshold ({UTILIZATION_LIMIT}%)... creating vm")
+                create_vm(VM_SERVER_URL)
+
+    except requests.exceptions.ConnectionError as e:
+        print(f"Error: Container configurator or Vm configurator not reachable.")
+    except Exception as e:
+        print(f"Error {e}.")
+    
+
+
+
+
+
+
+
 
 
     

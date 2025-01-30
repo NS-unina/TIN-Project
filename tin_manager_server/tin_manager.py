@@ -8,7 +8,7 @@ import json
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
-from flask_swagger_ui import get_swaggerui_blueprint
+#from flask_swagger_ui import get_swaggerui_blueprint
 
 
 
@@ -23,6 +23,7 @@ VM_SERVER_URL=f"http://{app.config['VM_SERVER_IP']}:{app.config['VM_SERVER_PORT'
 CONTAINER_SERVER_PORT=app.config['CONTAINER_SERVER_PORT']
 
 MAX_CONTAINERS=app.config['MAX_CONTAINERS']
+UTILIZATION_LIMIT=app.config['UTILIZATION_LIMIT']
 
 #Server Address for vm configuration 
 ONOS_URL=f"http://{app.config['ONOS_IP']}:{app.config['ONOS_PORT']}"
@@ -30,10 +31,41 @@ ONOS_AUTH_USERNAME = app.config['ONOS_AUTH_USERNAME']
 ONOS_AUTH_PASSWORD = app.config['ONOS_AUTH_PASSWORD']
 
 
+#Startup check
+
+while True:
+    try:
+        print ("Attempting to connect to vm configurator...")
+        vmList = get_vm_list(VM_SERVER_URL)
+        print(vmList)
+        if not vmList:
+            print ("No available vms.")
+            create_vm(VM_SERVER_URL)
+
+        for vm in vmList:
+            if vm["status"] == "running":                               #[FIXME] e se la vm è accesa ma container configurator non è running?
+                IP_CONTAINER_MASTER = vm["ip"]
+                print ("Container Master: ",IP_CONTAINER_MASTER)
+                break
+
+        print ("\nSTARTUP DONE")
+        break
+    
+    except ServerNotRunning as e:
+        print("[ERROR] Connection to vm configurator failed. Retrying...")
+        sleep(7)
+    except Exception as e:
+        print(jsonify({"error": f"{str(e)}"}))
+        break
+
+
 # Configuration of BackgroundScheduler
 scheduler = BackgroundScheduler()
 scheduler.start()
-scheduler.add_job(lambda: flow_cleanup(ONOS_URL, ONOS_AUTH_USERNAME, ONOS_AUTH_PASSWORD, CONTAINER_SERVER_PORT), trigger=IntervalTrigger(seconds=30))
+
+#[TODO] gestione errore connessione onos
+#scheduler.add_job(lambda: flow_cleanup(ONOS_URL, ONOS_AUTH_USERNAME, ONOS_AUTH_PASSWORD, CONTAINER_SERVER_PORT), trigger=IntervalTrigger(seconds=30))
+scheduler.add_job(lambda: vm_manager(IP_CONTAINER_MASTER, CONTAINER_SERVER_PORT, VM_SERVER_URL, MAX_CONTAINERS, UTILIZATION_LIMIT), trigger=IntervalTrigger(seconds=10))
 
 
 
@@ -210,23 +242,23 @@ def ping():
 
 
 #Swagger docs api
-SWAGGER_URL = '/apidocs'
-API_DOCS_PATH = 'tinmanager_docs.json'
+# SWAGGER_URL = '/apidocs'
+# API_DOCS_PATH = 'tinmanager_docs.json'
 
-swagger_ui_blueprint = get_swaggerui_blueprint(
-    SWAGGER_URL,
-    f'/{API_DOCS_PATH}',
-    config={
-        'app_name': "TIN Manager API Documentation"
-    }
-)
-app.register_blueprint(swagger_ui_blueprint, url_prefix=SWAGGER_URL)
+# swagger_ui_blueprint = get_swaggerui_blueprint(
+#     SWAGGER_URL,
+#     f'/{API_DOCS_PATH}',
+#     config={
+#         'app_name': "TIN Manager API Documentation"
+#     }
+# )
+# app.register_blueprint(swagger_ui_blueprint, url_prefix=SWAGGER_URL)
 
 
 #Request for documentation
-@app.route(f'/{API_DOCS_PATH}')
-def serve_swagger_file():
-    return send_from_directory('.', API_DOCS_PATH)
+# @app.route(f'/{API_DOCS_PATH}')
+# def serve_swagger_file():
+#     return send_from_directory('.', API_DOCS_PATH)
 
 if __name__ == '__main__':
     app.run(host=app.config['IP_ADDRESS'], port=app.config['PORT'])

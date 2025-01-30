@@ -114,10 +114,7 @@ def create_vm():
         return jsonify({"error": "name field is needed"}), 400
       
     try:
-        #Create vm directory
-        vm_path = os.path.join(VM_PATH, vm_name)
-        os.makedirs(vm_path)
-
+        
         #Create network interfaces for the VM
         url= f"{NET_SERVER_URL}/network/create_int/{vm_id}"
         response=requests.post(url,json="")
@@ -128,6 +125,10 @@ def create_vm():
             return jsonify({'error': f"Request failed."}), response.status_code
         
         vm_mac = generate_default_mac (vmCollection)
+
+        #Create vm directory
+        vm_path = os.path.join(VM_PATH, vm_name)
+        os.makedirs(vm_path)
 
         #Creating vagrantfile and save information in vm dictionary
         create_vagrantfile(vm_path, vm_name,vm_box, vm_cpus, vm_ram, vm_ip, vm_mac, vm_interface)
@@ -173,9 +174,9 @@ def delete_vm(vm_name):
         print(f"Interface deleted successfully!. Response: {response.json()}")
         
         #Deleting vm and directory
-        delete_containers_by_vm (vm_name, containerCollection)
         v = vagrant.Vagrant(vm_path)
         v.destroy()
+        delete_containers_by_vm (vm_name, containerCollection)
         delete_from_list(vm_name,vmCollection)
         rmtree(vm_path)
         return jsonify({"message": f"VM '{vm_name}' sucessfully deleted!"}), 200

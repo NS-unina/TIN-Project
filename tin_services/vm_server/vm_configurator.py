@@ -1,5 +1,6 @@
 from functions import *
 from exceptions import *
+from validation_schemas import *
 from config import DevelopmentConfig
 
 from flask import jsonify, send_from_directory
@@ -94,18 +95,24 @@ scheduler.add_job(lambda: sync_vm(VM_PATH, vmCollection), trigger=IntervalTrigge
 @app.route('/vm/create', methods=['POST'])
 def create_vm():
 
+    data = request.json
+    try:
+        validated_data = VMSchema().load(data)
+
+    except ValidationError as e:
+        return jsonify({"error": f"{e}"}), 400
+
     #Generate vm_id
     vm_id = generate_unique_id(vmCollection)
-    
-    data = request.json
-    vm_name = data.get('name', f'{vm_id}')
-    vm_box = data.get('box','generic/ubuntu2004')
-    vm_cpus = data.get('cpus', 2) #default 2 CPU
-    vm_ram = data.get ('ram', 1024) #default 1024 MB
-    
+
+    vm_name = data.get('name') or  f'{vm_id}'
+    vm_box = data.get('box') or 'generic/ubuntu2004'
+    vm_cpus = data.get('cpus') or 2 #default 2 CPU
+    vm_ram = data.get ('ram') or 1024 #default 1024 MB
+
     try:
         default_ip = generate_default_ip(vmCollection, DEFAULT_NETWORK, EXCLUDED_ADDRESSES)
-        vm_ip=data.get('ip', f'{default_ip}')
+        vm_ip=data.get('ip') or f'{default_ip}'
     except DefaultIpNotAvailable as e:
         return jsonify({"error": "Could not obtain default ip. Ip field is needed"}), 400
     
@@ -114,6 +121,9 @@ def create_vm():
         return jsonify({"error": "name field is needed"}), 400
       
     try:
+        #Create vm directory
+        vm_path = os.path.join(VM_PATH, vm_name)
+        os.makedirs(vm_path)
         
         #Create network interfaces for the VM
         url= f"{NET_SERVER_URL}/network/create_int/{vm_id}"
@@ -126,13 +136,9 @@ def create_vm():
         
         vm_mac = generate_default_mac (vmCollection)
 
-        #Create vm directory
-        vm_path = os.path.join(VM_PATH, vm_name)
-        os.makedirs(vm_path)
-
         #Creating vagrantfile and save information in vm dictionary
         create_vagrantfile(vm_path, vm_name,vm_box, vm_cpus, vm_ram, vm_ip, vm_mac, vm_interface)
-        vm = create_item_vm_list(vm_name, vm_id, vm_ram, vm_cpus, vm_ip, vm_mac, vmCollection)
+        vm = create_item_vm_list(vm_name, vm_id, vm_ram, vm_cpus, vm_ip, vm_mac, vm_box, vmCollection)
 
         #Starting the vm
         v = vagrant.Vagrant(vm_path)
@@ -158,7 +164,7 @@ def create_vm():
 def delete_vm(vm_name):
 
     try:
-        #Check if vm already exist
+        #Check if vm already exist          [FIXME] il controllo lo facciamo sulla cartella o sul database??
         vm_path = os.path.join(VM_PATH, vm_name)
         if not os.path.exists(vm_path):
             return jsonify({"error": f"VM '{vm_name}' doesn't exist"}), 404
@@ -205,10 +211,17 @@ def list_vms():
 
 @app.route('/vm/update/<vm_name>', methods=['POST'])
 def update_vm(vm_name):
+
     data = request.json
+    try:
+        validated_data = VMUpdateSchema().load(data)
+
+    except ValidationError as e:
+        return jsonify({"error": f"{e}"}), 400
+
     vm_cpus = data.get('cpus') 
     vm_ram = data.get ('ram') 
-    vm_ip=data.get('ip')
+    vm_ip = data.get('ip')
 
     if ((not vm_cpus) and (not vm_ram) and (not vm_ip)):
         return jsonify({"error": "At least one field of 'cpus', 'ram' or 'ip' is needed"}), 400

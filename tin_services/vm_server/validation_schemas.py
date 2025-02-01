@@ -1,55 +1,58 @@
-from marshmallow import Schema, fields, ValidationError,validates
+from marshmallow import Schema, fields, ValidationError,validates,pre_load
 from marshmallow.validate import Regexp,Range
 
 
 class VMNameSchema(Schema):
     vm_name = fields.Str(
         required=True, 
-        validate=Regexp(r'^[a-zA-Z0-9_]{3,20}$', error="Invalid VM name. Use only letters, numbers, and underscores (3-20 characters).")
+        validate=Regexp(r'^[a-zA-Z0-9-]{3,20}$', error="Invalid VM name. Use only letters, numbers,  (3-20 characters).")
     )
 
 
 class VMSchema(Schema):
-    vm_name = fields.Str(
-        required=True,
-        validate=Regexp(r'^[a-zA-Z0-9_-]{3,30}$', error="Invalid VM name. Use only letters, numbers, underscores, or hyphens (3-30 characters).")
+    name = fields.Str(
+        required=False,
+        validate=Regexp(r'$|^[a-zA-Z0-9-]{3,30}$', error="Invalid VM name. Use only letters, numbers, or hyphens (3-30 characters).")
     )
 
-    vm_box = fields.Str(
-        required=True,
-        validate=Regexp(r'^[a-zA-Z0-9_-]+$', error="Invalid VM box. Use only letters, numbers, underscores, or hyphens.")
+    box = fields.Str(
+        required=False,
+        validate=Regexp(r'$|^[a-zA-Z0-9-\/]+$', error="Invalid VM box. Use only letters, numbers, slash, or hyphens.")
     )
 
-    vm_cpus = fields.Int(
-        required=True,
-        validate=Range(min=1, max=4, error="CPU count must be between 1 and 32.")
+    cpus = fields.Str(
+        required=False,
+        validate=Regexp(r'$|^[1-4]$', error="Invalid CPU count must be between 1 and 4.")
+    )    
+    
+    ram = fields.Str(
+        required=False,
+        validate=Regexp(r'$|^(512|[5-9]\d{2}|[1-5]\d{3}|6[0-4]\d{3}|65[0-4]\d{2}|655[0-2]\d|6553[0-6])$', error="Invalid RAM count must be between 512MB and 65536MB (64GB).")
+    )
+   
+
+    ip = fields.Str(
+        required=False,
+        validate=Regexp(r'$|^(?:\d{1,3}\.){3}\d{1,3}$', error="Invalid IP address format.")
     )
 
-    vm_ram = fields.Int(
-        required=True,
-        validate=Range(min=512, max=65536, error="RAM must be between 512MB and 65536MB (64GB).")
-    )
 
-    vm_ip = fields.Str(
-        required=True,
-        validate=Regexp(r'^(?:\d{1,3}\.){3}\d{1,3}$', error="Invalid IP address format.")
-    )
 
 class VMUpdateSchema(Schema):
 
-    vm_cpus = fields.Int(
-        required=True,
-        validate=Range(min=1, max=4, error="CPU count must be between 1 and 32.")
+    cpus = fields.Str(
+        required=False,
+        validate=Regexp(r'$|^[1-4]$', error="Invalid CPU count must be between 1 and 4.")
+    )  
+
+    ram = fields.Str(
+        required=False,
+        validate=Regexp(r'$|^(512|[5-9]\d{2}|[1-5]\d{3}|6[0-4]\d{3}|65[0-4]\d{2}|655[0-2]\d|6553[0-6])$', error="Invalid RAM count must be between 512MB and 65536MB (64GB).")
     )
 
-    vm_ram = fields.Int(
-        required=True,
-        validate=Range(min=512, max=65536, error="RAM must be between 512MB and 65536MB (64GB).")
-    )
-
-    vm_ip = fields.Str(
-        required=True,
-        validate=Regexp(r'^(?:\d{1,3}\.){3}\d{1,3}$', error="Invalid IP address format.")
+    ip = fields.Str(
+        required=False,
+        validate=Regexp(r'$|^(?:\d{1,3}\.){3}\d{1,3}$', error="Invalid IP address format.")
     )   
 
 

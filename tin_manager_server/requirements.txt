@@ -4,11 +4,14 @@ certifi==2024.8.30
 charset-normalizer==3.4.0
 click==8.1.7
 Flask==3.1.0
+flask-marshmallow==1.3.0
 flask-swagger-ui==4.11.1
 idna==3.10
 itsdangerous==2.2.0
 Jinja2==3.1.4
 MarkupSafe==3.0.2
+marshmallow==3.26.0
+packaging==24.2
 requests==2.32.3
 tzlocal==5.2
 urllib3==2.2.3

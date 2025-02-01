@@ -8,6 +8,7 @@ dnspython==2.7.0
 docker==7.1.0
 Flask==3.1.0
 Flask-Cors==3.0.10
+flask-marshmallow==1.3.0
 flask-swagger-ui==4.11.1
 idna==3.10
 itsdangerous==2.2.0
@@ -15,7 +16,9 @@ Jinja2==3.1.4
 jsonschema==4.23.0
 jsonschema-specifications==2024.10.1
 MarkupSafe==3.0.2
+marshmallow==3.26.0
 mistune==3.0.2
+nodeenv==1.9.1
 packaging==24.2
 pymongo==4.10.1
 python-vagrant==1.0.0

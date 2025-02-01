@@ -217,7 +217,7 @@ def update_ip(ip, vm_name,VM_PATH):
 
 # ********[DICTIONARY LIST VM]********
 # Create item in vm dictionary
-def create_item_vm_list(vm_name, id, ram, cpu, ip, mac, collection):
+def create_item_vm_list(vm_name, id, ram, cpu, ip, mac, box, collection):
 
     newvm = {
         "name": vm_name,
@@ -226,6 +226,7 @@ def create_item_vm_list(vm_name, id, ram, cpu, ip, mac, collection):
         "cpu": cpu,
         "ip": ip,
         "mac": mac,
+        "box": box,
         "status": "not created"
     }
 

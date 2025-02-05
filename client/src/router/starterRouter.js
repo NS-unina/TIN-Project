@@ -51,7 +51,7 @@ export default new Router({
           path: "containers",
           name: "containers",
           components: { default: Container },
-          beforeEnter: authenticationGuard,
+          // beforeEnter: authenticationGuard,
 
         },
         {

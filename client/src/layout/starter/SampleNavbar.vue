@@ -86,17 +86,11 @@
                   <img src="img/anime3.png" />
                 </div>
                 <b class="caret d-none d-lg-block d-xl-block"></b>
-                <p class="d-lg-none">Log out</p>
+                <p class="d-lg-none">Profile</p>
+                
               </a>
               <li class="nav-link">
-                <a href="#" class="nav-item dropdown-item">Profile</a>
-              </li>
-              <li class="nav-link">
-                <a href="#" class="nav-item dropdown-item">Settings</a>
-              </li>
-              <div class="dropdown-divider"></div>
-              <li class="nav-link">
-                <a href="#" class="nav-item dropdown-item">Log out</a>
+                <a href="#" class="nav-item dropdown-item"> <LogoutButton/></a>
               </li>
             </base-dropdown>
           </ul>
@@ -108,11 +102,13 @@
 <script>
 import { CollapseTransition } from "vue2-transitions";
 import Modal from "@/components/Modal";
+import LogoutButton from "@/components/Buttons/logout-button.vue";
 
 export default {
   components: {
     CollapseTransition,
     Modal,
+    LogoutButton,
   },
   computed: {
     routeName() {

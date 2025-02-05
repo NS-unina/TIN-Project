@@ -30,9 +30,9 @@ import { selectedVm } from "../../main.js";
                       <i class="tim-icons icon-zoom-split"></i>
                     </div>
                     <div class="description">
-                      <h3 class="info-title" style="margin-bottom: 5px;">Informative</h3>
+                      <h3 class="info-title" style="margin-bottom: 5px;">Comprehensive</h3>
                       <p class="description">
-                    Stay informed of real-time insights about usage and status at a glance, all in one intuitive dashboard
+                    Stay informed of real-time insights about usage and status at a glance
                       </p>
                     </div>
                   </div>

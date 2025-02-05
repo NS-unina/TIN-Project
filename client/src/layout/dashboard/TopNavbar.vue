@@ -130,7 +130,7 @@
                   <img src="img/anime3.png" />
                 </div>
                 <b class="caret d-none d-lg-block d-xl-block"></b>
-                <p class="d-lg-none">Log out</p>
+                <p class="d-lg-none">Log out </p>
               </a>
               <li class="nav-link">
                 <a href="#" class="nav-item dropdown-item">Profile</a>
@@ -152,6 +152,7 @@
 <script>
 import { CollapseTransition } from "vue2-transitions";
 import Modal from "@/components/Modal";
+
 
 export default {
   components: {

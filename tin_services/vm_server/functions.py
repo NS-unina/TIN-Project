@@ -34,13 +34,15 @@ def create_vagrantfile(vagrantfile_path,name,box,cpus,ram,ip,mac,interface):
     
         config.vm.provision "shell", path: "../init_vm.sh"
         config.vm.provision "docker"
+
+        #Files container server
         config.vm.provision "file", source: "../../container_server/container_configurator.py", destination: "app.py"
         config.vm.provision "file", source: "../../container_server/functions.py", destination: "functions.py"
         config.vm.provision "file", source: "../../container_server/exceptions.py", destination: "exceptions.py"
         config.vm.provision "file", source: "../../container_server/config.py", destination: "config.py"
+        config.vm.provision "file", source: "../../container_server/validation_schemas.py", destination: "validation_schemas.py"
 
         #network configuration
-        #config.vm.network :forwarded_port, guest: 5002, host: 5002, id: "container_server"
         config.vm.network "public_network", bridge: "{interface}", ip: "{ip}", mac: "{mac}"
 
     end

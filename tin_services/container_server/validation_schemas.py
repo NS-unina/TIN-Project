@@ -5,9 +5,9 @@ from marshmallow.validate import Regexp,Range
 
 class ContainerSchema(Schema):
     name = fields.Str(
-        required=True,
+        required=False,
         validate=Regexp(
-            r'^[a-zA-Z0-9][a-zA-Z0-9_.-]{2,62}$',
+            r'$|^[a-zA-Z0-9][a-zA-Z0-9_.-]{2,62}$',
             error="Invalid container name. Must be 3-63 characters long, start with a letter or number, and contain only letters, numbers, dots (.), underscores (_), or hyphens (-)."
         )
     )
@@ -42,4 +42,17 @@ class ContainerNameSchema(Schema):
             raise ValidationError("Container name cannot contain consecutive dots (..) or hyphens (--).")
         if value.startswith(".") or value.startswith("-"):
             raise ValidationError("Container name cannot start with a dot (.) or hyphen (-).")
-        
+
+
+    
+class VMPortSchema(Schema):
+    vm_port = fields.Int(
+        required=True,
+        validate=Range(min=1, max=65535, error="VM port must be between 1 and 65535.")
+    )
+
+class ServicePortSchema(Schema):
+    service_port = fields.Int(
+        required=True,
+        validate=Range(min=1, max=65535, error="Service port must be between 1 and 65535.")
+    )

@@ -13,4 +13,4 @@ pip install docker
 pip install Flask-Cors
 pip install pymongo
 pip install apscheduler
-
+pip install flask-marshmallow

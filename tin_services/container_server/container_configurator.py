@@ -1,5 +1,7 @@
 from functions import *
 from exceptions import *
+from validation_schemas import *
+
 from config import DevelopmentConfig
 
 from flask import Flask, jsonify, request
@@ -46,12 +48,15 @@ scheduler.add_job(lambda: sync_container(containerCollection), trigger=IntervalT
 @app.route('/container/create', methods=['POST'])
 def create_container():
     data = request.json
+
+    try:
+        validated_data = ContainerSchema().load(data)
+    except ValidationError as e:
+        return jsonify({"error": f"{e}"}), 400
+
     name = data.get('name')
     service_port = data.get('service_port')
-    # docker_image = data.get('image')
 
-    if not service_port:
-        return jsonify({"error": "Service_port field is needed"}), 400
 
     try:   
         #Check if name already exists
@@ -124,6 +129,12 @@ def create_container():
 def delete_container(container_name):
 
     try:
+        validated_data = ContainerNameSchema().load({"container_name":container_name})
+    except ValidationError as e:
+        return jsonify({"error": f"{e}"}), 400
+
+
+    try:
         #Check if name already exists
         if not check_if_value_field_exists("name", container_name, containerCollection):
             return jsonify({'error': f"Container name {container_name} doesn't exists."}),404
@@ -147,6 +158,11 @@ def delete_container(container_name):
 
 @app.route('/container/delete/byport/<vm_port>', methods=['DELETE'])
 def delete_container_by_port(vm_port):
+    
+    try:
+        validated_data = VMPortSchema().load({"vm_port":vm_port})
+    except ValidationError as e:
+        return jsonify({"error": f"{e}"}), 400
     
     try:
         container_name = get_container_by_vm_port(vm_port, containerCollection)["name"]
@@ -184,6 +200,12 @@ def read_container():
 #get container by service -returns the top priority container with the specified service
 @app.route('/container/<service_port>', methods=['GET'])
 def get_container_by_service(service_port):
+
+    try:
+        validated_data = ServicePortSchema().load({"service_port":service_port})
+    except ValidationError as e:
+        return jsonify({"error": f"{e}"}), 400
+
     try:
         container = search_container_by_service (service_port, containerCollection)
         print(container)
@@ -200,6 +222,11 @@ def get_container_by_service(service_port):
 @app.route('/container/start/<container_name>', methods=['POST'])
 def start_container(container_name):
   
+    try:
+        validated_data = ContainerNameSchema().load({"container_name":container_name})
+    except ValidationError as e:
+        return jsonify({"error": f"{e}"}), 400
+
     try:
         #Check if container exists
         if not check_if_value_field_exists("name", container_name, containerCollection):
@@ -228,6 +255,11 @@ def start_container(container_name):
 def stop_container(container_name):
      
     try:
+        validated_data = ContainerNameSchema().load({"container_name":container_name})
+    except ValidationError as e:
+        return jsonify({"error": f"{e}"}), 400
+         
+    try:
         #Check if container exists
         if not check_if_value_field_exists("name", container_name, containerCollection):
             return jsonify({'error': f"Container name {container_name} doesn't exists."})
@@ -254,7 +286,6 @@ def stop_container(container_name):
 @app.route('/container/count', methods=['GET'])
 def container_number():
     try:
-
         result = count_container(containerCollection)
         result_dict = {item["vm_name"]: item["number_of_containers"] for item in result}
 

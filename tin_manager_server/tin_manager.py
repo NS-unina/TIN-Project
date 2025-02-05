@@ -1,5 +1,6 @@
 from functions import *
 from exceptions import *
+from validation_schemas import *
 from config import DevelopmentConfig
 from flask import Flask, jsonify, request, send_from_directory
 import requests
@@ -74,24 +75,19 @@ scheduler.add_job(lambda: vm_manager(IP_CONTAINER_MASTER, CONTAINER_SERVER_PORT,
 @app.route('/tinmanager/tcp/addflow', methods=['POST'])
 def add_flow():
     data = request.json
+
+    try:
+        validated_data = AddFlowSchema().load(data)
+    except ValidationError as e:
+        return jsonify({"error": f"{e}"}), 400
+
     src_ip = data.get('src_ip')
     dst_ip = data.get('dst_ip')
     src_port = data.get('src_port')
     dst_port = data.get('dst_port')
     ovs_id=data.get('ovs_id')
 
-    #check fields
-    # if not src_ip:
-    #     return jsonify({"error": "src_ip field is needed"}), 400
-    # if not dst_ip:
-    #     return jsonify({"error": "dst_ip field is needed"}), 400
-    # if not port:
-    #     return jsonify({"error": "port field is needed"}), 400
-    # if not ovs_id:
-    #     return jsonify({"error": "ovs_id field is needed"}), 400
     
-
-
     try:
         #Get vmList
         vmList = get_vm_list(VM_SERVER_URL)
@@ -159,21 +155,18 @@ def add_flow():
 def containerLimit():
     global MAX_CONTAINERS
 
+    data = request.json
     try:
-        data = request.json
+        validated_data = MAX_CONTAINERSSchema().load(data)
+    except ValidationError as e:
+        return jsonify({"error": f"{e}"}), 400
 
-        if not data.get('max_container'):
-            return jsonify({"error": "'max_container' field is needed"}), 400
-            
-        MAX_CONTAINERS = data.get('max_container')
+    try:               
+        MAX_CONTAINERS = data.get('max_containers')
         return jsonify(f"Max num container modified to {MAX_CONTAINERS}."), 200
     
     except Exception as e:
         return jsonify({'error': f'{e}'}), 500
-
-
-
-
 
 
 @app.route('/tinmanager/ping', methods=['GET'])
@@ -181,64 +174,7 @@ def ping():
     return jsonify("server running"), 200
 
 
-# @app.route('/tinmanager/testflow', methods=['POST'])
-# def test_flow():
 
-#     data = request.json
-#     src_ip = data.get('src_ip')
-#     dst_ip = data.get('dst_ip')
-#     src_port = data.get('src_port')
-#     dst_port = data.get('dst_port')
-#     ovs_id=data.get('ovs_id')
-
-
-#     payload= {
-#         "flows": [
-#             {
-#                 "priority": 50000,
-#                 "timeout": 0,
-#                 "isPermanent":"true",
-#                 "deviceId": f"{ovs_id}",
-#                 "treatment": {
-#                     "instructions": [
-#                         {
-#                             "type": "OUTPUT",
-#                             "port": "NORMAL"
-#                         }
-#                     ]
-#                 },
-#                 "selector": {
-#                     "criteria": [
-#                         {
-#                             "type": "ETH_TYPE",
-#                             "ethType": "0x0800"
-#                         },
-#                         {
-#                             "type": "IPV4_SRC",
-#                             "ip": f"{src_ip}/32"
-#                         },
-#                         {
-#                             "type": "IPV4_DST",
-#                             "ip": f"{dst_ip}/32"
-#                         }
-                       
-#                     ]
-#                 }
-#             }
-#         ]
-#     }
-
-
-
-#     username = "onos"
-#     password = "rocks"
-
-
-#     url= "http://localhost:8181/onos/v1/flows"
-#     response=requests.post(url,json=payload,auth=(username, password))
-#     print (response.json())
-    
-#     return jsonify({"message":  "Flow successfully created!"}), 201
 
 
 #Swagger docs api

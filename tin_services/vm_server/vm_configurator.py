@@ -164,6 +164,12 @@ def create_vm():
 def delete_vm(vm_name):
 
     try:
+        validated_data = VMNameSchema().load({"vm_name":vm_name})
+    except ValidationError as e:
+        return jsonify({"error": f"{e}"}), 400
+
+    try:
+        
         #Check if vm already exist          [FIXME] il controllo lo facciamo sulla cartella o sul database??
         vm_path = os.path.join(VM_PATH, vm_name)
         if not os.path.exists(vm_path):
@@ -214,6 +220,7 @@ def update_vm(vm_name):
 
     data = request.json
     try:
+        validated_data = VMNameSchema().load({"vm_name":vm_name})
         validated_data = VMUpdateSchema().load(data)
 
     except ValidationError as e:
@@ -262,6 +269,11 @@ def update_vm(vm_name):
 def power_start_vm(vm_name):
 
     try:
+        validated_data = VMNameSchema().load({"vm_name":vm_name})
+    except ValidationError as e:
+        return jsonify({"error": f"{e}"}), 400
+
+    try:
         #Check if vm exist
         vm_path = os.path.join(VM_PATH, vm_name)
         if not os.path.exists(vm_path):
@@ -280,6 +292,11 @@ def power_start_vm(vm_name):
 
 @app.route('/vm/stop/<vm_name>', methods=['POST'])
 def power_stop_vm(vm_name):
+
+    try:
+        validated_data = VMNameSchema().load({"vm_name":vm_name})
+    except ValidationError as e:
+        return jsonify({"error": f"{e}"}), 400
 
     try:
         #Check if vm exist
@@ -302,6 +319,11 @@ def power_stop_vm(vm_name):
 def power_vm(vm_name):
 
     try:
+        validated_data = VMNameSchema().load({"vm_name":vm_name})
+    except ValidationError as e:
+        return jsonify({"error": f"{e}"}), 400
+
+    try:
         #Check if vm exist
         vm_path = os.path.join(VM_PATH, vm_name)
         if not os.path.exists(vm_path):
@@ -322,16 +344,15 @@ def power_vm(vm_name):
 @app.route('/services/priority', methods=['POST'])
 def edit_service_priority():
     data = request.json
+
+    try:
+        validated_data = ServiceSchema().load(data)
+    except ValidationError as e:
+        return jsonify({"error": f"{e}"}), 400
+
     image = data.get ('image')
     service_port = data.get('service_port') 
     priority=data.get('priority')
-
-    if not image:
-        return jsonify({"error": "'image' field is needed"}), 400
-    if not priority:
-        return jsonify({"error": "'priority' field is needed"}), 400
-    if not service_port:
-        return jsonify({"error": "'service_port' field is needed"}), 400
 
     try:
         update_priority_service_list(image, service_port, priority, serviceCollection)

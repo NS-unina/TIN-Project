@@ -2,6 +2,9 @@ from flask import Flask, jsonify, send_from_directory
 from flask_swagger_ui import get_swaggerui_blueprint
 import subprocess
 import os
+
+from validation_schemas import *
+
 from config import DevelopmentConfig
 
 
@@ -43,6 +46,12 @@ except Exception as e:
 # ********[ API ]********
 @app.route('/network/create_int/<vm_id>', methods=['POST'])
 def create_int(vm_id):
+
+
+    try:
+        validated_data = VMIdSchema().load({"vm_id":vm_id})
+    except ValidationError as e:
+        return jsonify({"error": f"{e}"}), 400
 
     #Interface name
     veth_name = f"veth-{vm_id}"
@@ -87,6 +96,13 @@ def create_int(vm_id):
 @app.route('/network/delete_int/<vm_id>', methods=['DELETE'])
 def delete_int(vm_id):
     
+
+    try:
+        validated_data = VMIdSchema().load({"vm_id":vm_id})
+    except ValidationError as e:
+        return jsonify({"error": f"{e}"}), 400    
+
+
     #Interface name
     veth_name = f"veth-{vm_id}"
 

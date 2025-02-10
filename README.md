@@ -4,7 +4,7 @@ The purpose of this project is to create a Threat Intelligence Network leveragin
 This work also introduces a flexible management system that allows for automatic deployment, setup, and real-time monitoring of honeypots
 
 
-<img src="https://github.com/user-attachments/assets/56948c74-e5de-4f1e-a2e1-cc25ca8981f0" width="200">
+<img src="https://github.com/user-attachments/assets/997cf887-b93a-4ece-bd58-0678ce42ff1e" width="200">
 
 WORK IN PROGRESS
 ## Installation

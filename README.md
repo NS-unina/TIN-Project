@@ -3,11 +3,14 @@
 The purpose of this project is to create a Threat Intelligence Network leveraging Software Defined Networking (SDN) principles in conjunction with Moving Target Defense and decoy techniques.
 This work also introduces a flexible management system that allows for automatic deployment, setup, and real-time monitoring of honeypots
 
-WORK IN PROGRESS
 
+<img src="https://github.com/user-attachments/assets/56948c74-e5de-4f1e-a2e1-cc25ca8981f0" width="200">
+
+WORK IN PROGRESS
 ## Installation
 
 ### Requirements
+
 
 In order to execute the project you need to install Open vSwitch, Vagrant, VirtualBox
 

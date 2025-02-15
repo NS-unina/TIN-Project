@@ -52,7 +52,7 @@ def create_vagrantfile(vagrantfile_path,name,box,cpus,ram,ip,mac,interface):
         vagrant_file.write(vagrantfile_content)
     return
 
-# #Define vm's id
+# Generate vm's id
 def generate_unique_id(collection,length=5):
  
     id_list = collection.find({}, {"_id": 0, "id": 1})
@@ -62,7 +62,7 @@ def generate_unique_id(collection,length=5):
             print (vm_id)
             return vm_id
     
-
+# Generate vm's IP
 def generate_default_ip(collection, network, excluded_ips):
 
     result = collection.find({}, {"_id": 0, "ip": 1})
@@ -77,6 +77,7 @@ def generate_default_ip(collection, network, excluded_ips):
     #Ip not found
     raise DefaultIpNotAvailable ("Default IP not available.", error_code=400)
 
+# Generate vm's MAC
 def generate_default_mac (collection):
 
     used_mac = collection.find({}, {"_id": 0, "mac": 1})
@@ -90,10 +91,8 @@ def generate_default_mac (collection):
             print (mac)
             return mac
         
-    
 
 # ********[FUNCTION FOR VM STATUS]********
-
 # Restore vm based on last status
 def restore_vm_status (VM_PATH,collection): 
 
@@ -132,9 +131,7 @@ def sync_vm(VM_PATH, collection):
                 update_item_vm_list(vm_name, "status", status[0].state, collection)
                 print (f"Updated vm '{vm_name}' status")
 
-        except VagrantfileNotFound as e:
-            print ({"Error updating vms status": f"{e.message}"})
-        except VmNotFound as e:
+        except (VagrantfileNotFound, VmNotFound) as e:
             print ({"Error updating vms status": f"{e.message}"})
         except ItemNotModified as e:
             print ("Nothing to update")
@@ -145,8 +142,7 @@ def sync_vm(VM_PATH, collection):
             print ({"Error updating vms status": f"Error {e}"})
 
 
-
-# ********[UPDATE FIELD IN VAGRANTFILE]********
+# ********[UPDATE IN VAGRANTFILE]********
 #Update CPU
 def update_cpu(cpu, vm_name,VM_PATH):
     
@@ -217,7 +213,7 @@ def update_ip(ip, vm_name,VM_PATH):
 
 
 
-# ********[DICTIONARY LIST VM]********
+# ********[OPERATION ON VM LIST]********
 # Create item in vm dictionary
 def create_item_vm_list(vm_name, id, ram, cpu, ip, mac, box, collection):
 
@@ -238,22 +234,22 @@ def create_item_vm_list(vm_name, id, ram, cpu, ip, mac, box, collection):
 
     newvm.pop("_id", None)
     return newvm 
+
+#Delete item
+def delete_from_list(vm_name, collection):
+
+    result = collection.delete_one({"name": vm_name})
+    if (result.deleted_count==0):
+        raise ItemNotFound (f"Cannot delete vm {vm_name} ", error_code=400) 
+
+def delete_containers_by_vm (vm_name, containerCollection):
     
-
-
-
-# Update image priority in service list
-def update_priority_service_list(image, service_port, priority, collection):
-
-    result = collection.update_one({"image": image},
-                                   {"$set": {"services.$[service].priority": priority }},
-                                    array_filters=[{"service.service_port": service_port}])
-
-    if (result.matched_count==0):
-        raise ImageNotFound (f"Can not find image '{image}'.", error_code=404)
-    if(result.modified_count==0):
-        raise ItemNotModified (f"Priority  in '{service_port}' not modified.", error_code=200)
-
+    result = containerCollection.delete_many({"vm_name": vm_name})
+    if (result.deleted_count==0):
+        print("message: No containers to delete.")
+    else:
+        print (f"{result.deleted_count} containers deleted.")
+        return
 
 # Update item in vm list
 def update_item_vm_list(vm_name, field, value_field, collection):
@@ -278,32 +274,14 @@ def search_item_vm_list(vm_name, field, collection):
     return item[field]
 
 
-#Delete from 
-def delete_from_list(vm_name, collection):
+# Update image priority in service list
+def update_priority_service_list(image, service_port, priority, collection):
 
-    result = collection.delete_one({"name": vm_name})
-    if (result.deleted_count==0):
-        raise ItemNotFound (f"Cannot delete vm {vm_name} ", error_code=400) 
- 
+    result = collection.update_one({"image": image},
+                                   {"$set": {"services.$[service].priority": priority }},
+                                    array_filters=[{"service.service_port": service_port}])
 
-def delete_containers_by_vm (vm_name, containerCollection):
-    
-    result = containerCollection.delete_many({"vm_name": vm_name})
-    if (result.deleted_count==0):
-        print("message: No containers to delete.")
-    else:
-        print (f"{result.deleted_count} containers deleted.")
-        return
-
-
-# ********[DATABASE FUNCTION]********
-def check_database_exists (mongo, database_name):
-    dblist = mongo.list_database_names()
-    if not (f"{database_name}" in dblist):
-        raise DatabaseNotFound (f"Database {database_name} not found.", error_code=404)
-
-def check_collection_exists (mongo, database_name, collection_name):
-    check_database_exists(mongo, database_name)
-    collist = database_name.list_collection_names()
-    if not (f"{collection_name}" in collist):
-        raise CollectionNotFound (f"Collection {database_name} not found.", error_code=404)
+    if (result.matched_count==0):
+        raise ImageNotFound (f"Can not find image '{image}'.", error_code=404)
+    if(result.modified_count==0):
+        raise ItemNotModified (f"Priority  in '{service_port}' not modified.", error_code=200)

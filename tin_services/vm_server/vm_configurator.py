@@ -89,8 +89,6 @@ scheduler.start()
 scheduler.add_job(lambda: sync_vm(VM_PATH, vmCollection), trigger=IntervalTrigger(seconds=15))
 
 
-
-
 # ********[ API ]********
 @app.route('/vm/create', methods=['POST'])
 def create_vm():
@@ -98,7 +96,6 @@ def create_vm():
     data = request.json
     try:
         validated_data = VMSchema().load(data)
-
     except ValidationError as e:
         return jsonify({"error": f"{e}"}), 400
 
@@ -108,19 +105,14 @@ def create_vm():
     vm_name = data.get('name') or  f'{vm_id}'
     vm_box = data.get('box') or 'generic/ubuntu2004'
     vm_cpus = data.get('cpus') or 2 #default 2 CPU
-    vm_ram = data.get ('ram') or 1024 #default 1024 MB
-
-    try:
-        default_ip = generate_default_ip(vmCollection, DEFAULT_NETWORK, EXCLUDED_ADDRESSES)
-        vm_ip=data.get('ip') or f'{default_ip}'
-    except DefaultIpNotAvailable as e:
-        return jsonify({"error": "Could not obtain default ip. Ip field is needed"}), 400
-    
-    #Field needed
-    if not vm_name:
-        return jsonify({"error": "name field is needed"}), 400
+    vm_ram = data.get ('ram') or 1024 #default 1024 MB  
       
     try:
+        #Generate IP and MAC
+        default_ip = generate_default_ip(vmCollection, DEFAULT_NETWORK, EXCLUDED_ADDRESSES)
+        vm_ip=data.get('ip') or f'{default_ip}'
+        vm_mac = generate_default_mac (vmCollection)
+
         #Create vm directory
         vm_path = os.path.join(VM_PATH, vm_name)
         os.makedirs(vm_path)
@@ -133,8 +125,6 @@ def create_vm():
             vm_interface = response.json()["interface"]
         else:
             return jsonify({'error': f"Request failed."}), response.status_code
-        
-        vm_mac = generate_default_mac (vmCollection)
 
         #Creating vagrantfile and save information in vm dictionary
         create_vagrantfile(vm_path, vm_name,vm_box, vm_cpus, vm_ram, vm_ip, vm_mac, vm_interface)
@@ -147,6 +137,8 @@ def create_vm():
         update_item_vm_list(vm_name, "status", status[0].state, vmCollection)        
         return jsonify({"message": f"VM '{vm_name}' successfully created!", "vm": vm}), 201
 
+    except DefaultIpNotAvailable as e:
+        return jsonify({"error": "Could not obtain default ip. Ip field is needed"}), 400
     except FileExistsError:
         return jsonify({"error": f"VM '{vm_name}' already exist"}), 409
     except requests.exceptions.ConnectionError as e:
@@ -169,11 +161,14 @@ def delete_vm(vm_name):
         return jsonify({"error": f"{e}"}), 400
 
     try:
+        #Check if vm exist
+        vm = vmCollection.find_one({"name": vm_name }, {"_id": 0})
+        if (not vm):
+            return jsonify({"error": f"VM '{vm_name}' doesn't exist"}), 404
         
-        #Check if vm already exist          [FIXME] il controllo lo facciamo sulla cartella o sul database??
         vm_path = os.path.join(VM_PATH, vm_name)
         if not os.path.exists(vm_path):
-            return jsonify({"error": f"VM '{vm_name}' doesn't exist"}), 404
+            return jsonify({"error": f"VM '{vm_name}' folder doesn't exist"}), 404
 
         #Find associated interface
         vm_id = search_item_vm_list(vm_name, "id",vmCollection)
@@ -222,7 +217,6 @@ def update_vm(vm_name):
     try:
         validated_data = VMNameSchema().load({"vm_name":vm_name})
         validated_data = VMUpdateSchema().load(data)
-
     except ValidationError as e:
         return jsonify({"error": f"{e}"}), 400
 
@@ -234,11 +228,16 @@ def update_vm(vm_name):
         return jsonify({"error": "At least one field of 'cpus', 'ram' or 'ip' is needed"}), 400
     
     try:
-        #Check if vm already exist
+        #Check if vm exist
+        vm = vmCollection.find_one({"name": vm_name }, {"_id": 0})
+        if (not vm):
+            return jsonify({"error": f"VM '{vm_name}' doesn't exist"}), 404
+        
         vm_path = os.path.join(VM_PATH, vm_name)
         if not os.path.exists(vm_path):
-            return jsonify({"error": f"VM '{vm_name}' doesn't exist"}), 404
-    
+            return jsonify({"error": f"VM '{vm_name}' folder doesn't exist"}), 404
+
+        #Update operations
         if (vm_cpus):
             update_cpu(vm_cpus, vm_name,VM_PATH)
             update_item_vm_list(vm_name, "cpu", vm_cpus, vmCollection)
@@ -275,9 +274,13 @@ def power_start_vm(vm_name):
 
     try:
         #Check if vm exist
+        vm = vmCollection.find_one({"name": vm_name }, {"_id": 0})
+        if (not vm):
+            return jsonify({"error": f"VM '{vm_name}' doesn't exist"}), 404
+        
         vm_path = os.path.join(VM_PATH, vm_name)
         if not os.path.exists(vm_path):
-            return jsonify({"error": f"VM '{vm_name}' doesn't exist"}), 404
+            return jsonify({"error": f"VM '{vm_name}' folder doesn't exist"}), 404
 
         #Starting the vm
         v = vagrant.Vagrant(vm_path)
@@ -300,9 +303,13 @@ def power_stop_vm(vm_name):
 
     try:
         #Check if vm exist
+        vm = vmCollection.find_one({"name": vm_name }, {"_id": 0})
+        if (not vm):
+            return jsonify({"error": f"VM '{vm_name}' doesn't exist"}), 404
+        
         vm_path = os.path.join(VM_PATH, vm_name)
         if not os.path.exists(vm_path):
-            return jsonify({"error": f"VM '{vm_name}' doesn't exist"}), 404
+            return jsonify({"error": f"VM '{vm_name}' folder doesn't exist"}), 404
         
         #Stopping the vm
         v = vagrant.Vagrant(vm_path)
@@ -325,9 +332,13 @@ def power_vm(vm_name):
 
     try:
         #Check if vm exist
+        vm = vmCollection.find_one({"name": vm_name }, {"_id": 0})
+        if (not vm):
+            return jsonify({"error": f"VM '{vm_name}' doesn't exist"}), 404
+        
         vm_path = os.path.join(VM_PATH, vm_name)
         if not os.path.exists(vm_path):
-            return jsonify({"error": f"VM '{vm_name}' doesn't exist"}), 404
+            return jsonify({"error": f"VM '{vm_name}' folder doesn't exist"}), 404
 
         #Reloading the vm
         v = vagrant.Vagrant(vm_path)
@@ -374,11 +385,11 @@ def service_list():
     try:
         serviceList = list(serviceCollection.find({} ,{"_id": 0}))
         return jsonify(serviceList), 200
+    
     except pymongo.errors.ConnectionFailure as e:
         return jsonify({'error': 'Connection to database failed.'}), 500
     except Exception as e:
         return jsonify({"error": f"Error. {e}"}), 500
-
 
 
 
@@ -412,8 +423,8 @@ if __name__ == '__main__':
     app.run(host=app.config['IP_ADDRESS'], port=app.config['PORT'])
 
     try:
-        app.run(debug=True, use_reloader=False)  # use_reloader=False evita conflitti con APScheduler
+        app.run(debug=True, use_reloader=False)
     except (KeyboardInterrupt, SystemExit):
-        scheduler.shutdown()  # Assicura che lo scheduler venga fermato correttamente
+        scheduler.shutdown()
 
 

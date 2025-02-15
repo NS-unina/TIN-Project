@@ -8,6 +8,7 @@ class VMNameSchema(Schema):
         validate=Regexp(r'$|^[a-zA-Z0-9-]{3,20}$', error="Invalid VM name. Use only letters, numbers,  (3-20 characters).")
     )
 
+
 class VMSchema(Schema):
     name = fields.Str(
         required=False,
@@ -29,12 +30,11 @@ class VMSchema(Schema):
         validate=Regexp(r'$|^(512|[5-9]\d{2}|[1-5]\d{3}|6[0-4]\d{3}|65[0-4]\d{2}|655[0-2]\d|6553[0-6])$', error="Invalid RAM count must be between 512MB and 65536MB (64GB).")
     )
    
-
     ip = fields.Str(
         required=False,
-        validate=Regexp(r'$|^(?:\d{1,3}\.){3}\d{1,3}$', error="Invalid IP address format.")
+        validate=Regexp(r'$|^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$', error="Invalid IP address format.")
+        
     )
-
 
 
 class VMUpdateSchema(Schema):
@@ -51,7 +51,7 @@ class VMUpdateSchema(Schema):
 
     ip = fields.Str(
         required=False,
-        validate=Regexp(r'$|^(?:\d{1,3}\.){3}\d{1,3}$', error="Invalid IP address format.")
+        validate=Regexp(r'$|^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$', error="Invalid IP address format.")
     )   
 
 

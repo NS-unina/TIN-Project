@@ -1,317 +1,323 @@
-[
-  {
-    "image": "glastopf",
-    "volumes": [{"host":"glastopf","container":"/opt/glastopf"}],
-    "environment":[],
-    "services": [
-      {
-        "name": "http",
-        "service_port": "80",
-        "container_port": "80",
-        "priority": "10"
-      }
-    ]
-  },
-  {
-    "image": "mongohoneypot",
-    "volumes": [],
-    "environment":[],
-    "services": [
-      {
-        "name": "mongo",
-        "service_port": "27017",
-        "container_port": "27017",
-        "priority": "10"
-      }
-    ]
-  },
-
-  {
-    "image": "dionaea",
-    "volumes": [
-      {"host": "dionaea/config", "container":"/opt/dionaea/etc/dionaea"},
-      {"host": "dionaea/data", "container":"/opt/dionaea/var/lib/dionaea"},
-      {"host": "dionaea/log", "container":"/opt/dionaea/var/log/dionaea"}
-    ],
-    "environment":[],
-    "services": [
-      {
-        "name": "ftp",
-        "service_port": "21",
-        "container_port": "21",
-        "priority": "10"
-      },
-      {
-        "name": "tftp",
-        "service_port": "69",
-        "container_port": "69",
-        "priority": "10"
-      },
-      {
-        "name": "wins",
-        "service_port": "42",
-        "container_port": "42",
-        "priority": "10"
-      },
-      {
-        "name": "http",
-        "service_port": "80",
-        "container_port": "80",
-        "priority": "10"
-      },
-      {
-        "name": "rpc",
-        "service_port": "135",
-        "container_port": "135",
-        "priority": "10"
-      },
-      {
-        "name": "https",
-        "service_port": "443",
-        "container_port": "443",
-        "priority": "10"
-      },
-      {
-        "name": "smb",
-        "service_port": "445",
-        "container_port": "445",
-        "priority": "10"
-      },
-      {
-        "name": "microsoftsql",
-        "service_port": "1433",
-        "container_port": "1433",
-        "priority": "10"
-      },
-      {
-        "name": "pptp",
-        "service_port": "1723",
-        "container_port": "1723",
-        "priority": "10"
-      },
-      {
-        "name": "mqtt",
-        "service_port": "1883",
-        "container_port": "1883",
-        "priority": "10"
-      },
-      {
-        "name": "ssdp",
-        "service_port": "1900",
-        "container_port": "1900",
-        "priority": "10"
-      },
-      {
-        "name": "mysql",
-        "service_port": "3306",
-        "container_port": "3306",
-        "priority": "10"
-      },
-      {
-        "name": "sip",
-        "service_port": "5060",
-        "container_port": "5060",
-        "priority": "10"
-      },
-      {
-        "name": "sip-tls",
-        "service_port": "5061",
-        "container_port": "5061",
-        "priority": "10"
-      },
-      {
-        "name": "memecachedb",
-        "service_port": "11211",
-        "container_port": "11211",
-        "priority": "10"
-      }
-    ]
-  },
-  {
-    "image": "pyrdp",
-    "volumes": [{"host": "pyrdp_output", "container": "/home/pyrdp/pyrdp_output"}],
-    "environment":[],
-    "services": [
-      {
-        "name": "rdp",
-        "service_port": "3389",
-        "container_port": "3389",
-        "priority": "10"
-      }
-    ]
-  },
-  {
-    "image": "dshp",
-    "volumes": [],
-    "environment": [
-      {"name":"SMTP_SERVER","value":"<yoursmtpserveraddress>"},
-      {"name":"SMTP_TLS","value":"True "},
-      {"name":"SMTP_USER","value":"<yourmailuser> "},
-      {"name":"MAIL_FROM","value":"<fakeemail@yourmailprovider.com> "},
-      {"name":"SMTP_PASS","value":"<yourmailpass> "},
-      {"name":"SMTP_PORT","value":"smtpserverport>"},
-      {"name":"MAIL_TO","value":"yourmail@mailprovider.com "},
-      {"name":"HANDLERS","value":"'emailer.py' naorlivne/dshp"}
-    ],
-    "services": [
-      {
-        "name": "smtp",
-        "service_port": "587",
-        "container_port": "8888",
-        "priority": "10"
-      }
-    ]
-  },
-  {
-    "image": "fnzv/yafh-sshd",
-    "volumes": [],
-    "environment": [],
-    "services": [
-      {
-        "name": "ssh",
-        "service_port": "22",
-        "container_port": "2222",
-        "priority": "10"
-      }
-    ]
-  },
-  {
-    "image": "fnzv/yafh-telnetd",
-    "volumes": [],
-    "environment": [],
-    "services": [
-      {
-        "name": "telnet",
-        "service_port": "23",
-        "container_port": "23",
-        "priority": "10"
-      }
-    ]
-  },
-
-  {
-    "image": "heralding",
-    "volumes": [],
-    "environment": [],
-    "services": [
-      {
-        "name": "pop3",
-        "service_port": "110",
-        "container_port": "110",
-        "priority": "10"
-      },
-      {
-        "name": "pop3s",
-        "service_port": "995",
-        "container_port": "995",
-        "priority": "10"
-      },
-      {
-        "name": "smtp",
-        "service_port": "25",
-        "container_port": "25",
-        "priority": "10"
-      },
-      {
-        "name": "http",
-        "service_port": "80",
-        "container_port": "80",
-        "priority": "10"
-      },
-      {
-        "name": "https",
-        "service_port": "443",
-        "container_port": "443",
-        "priority": "10"
-      },
-      {
-        "name": "vnc",
-        "service_port": "5900",
-        "container_port": "5900",
-        "priority": "10"
-      },
-      {
-        "name": "telnet",
-        "service_port": "23",
-        "container_port": "23",
-        "priority": "10"
-      },
-      {
-        "name": "ftp",
-        "service_port": "21",
-        "container_port": "21",
-        "priority": "10"
-      },
-      {
-        "name": "imap",
-        "service_port": "143",
-        "container_port": "143",
-        "priority": "10"
-      },
-      {
-        "name": "mysql",
-        "service_port": "3306",
-        "container_port": "3306",
-        "priority": "10"
-      },
-      {
-        "name": "socks5",
-        "service_port": "1080",
-        "container_port": "1080",
-        "priority": "10"
-      },
-      {
-        "name": "ssh",
-        "service_port": "22",
-        "container_port": "2222",
-        "priority": "10"
-      },
-      {
-        "name": "postgres",
-        "service_port": "5432",
-        "container_port": "5432",
-        "priority": "10"
-      },
-      {
-        "name": "imaps",
-        "service_port": "993",
-        "container_port": "993",
-        "priority": "10"
-      }
-    ]
-  },
-
-  {
-    "image": "jekil/udpot",
-    "volumes": [],
-    "environment": [],
-    "services": [
-      {
-        "name": "dns",
-        "service_port": "5053/udp",
-        "container_port": "5053/udp",
-        "priority": "10"
-      }, {
-        "name": "dns",
-        "service_port": "5053/tcp",
-        "container_port": "5053/tcp",
-        "priority": "10"
-      }
-    ]
-  },
-  {
-    "image": "cowrie/cowrie",
-    "volumes": [],
-    "environment":[],
-    "services": [
-      {
-        "name": "ssh",
-        "service_port": "22",
-        "container_port": "2222",
-        "priority": "20"
-      }
-    ]
-  }
-]
-
-
+[{
+  "image": "mongohoneypot",
+  "volumes": [],
+  "environment": [],
+  "services": [
+    {
+      "name": "mongo",
+      "service_port": "27017",
+      "container_port": "27017",
+      "priority": "10"
+    }
+  ]
+},
+{
+  "image": "dionaea",
+  "volumes": [
+    {
+      "host": "dionaea/config",
+      "container": "/opt/dionaea/etc/dionaea"
+    },
+    {
+      "host": "dionaea/data",
+      "container": "/opt/dionaea/var/lib/dionaea"
+    },
+    {
+      "host": "dionaea/log",
+      "container": "/opt/dionaea/var/log/dionaea"
+    }
+  ],
+  "environment": [],
+  "services": [
+    {
+      "name": "ftp",
+      "service_port": "21",
+      "container_port": "21",
+      "priority": "10"
+    },
+    {
+      "name": "tftp",
+      "service_port": "69",
+      "container_port": "69",
+      "priority": "10"
+    },
+    {
+      "name": "wins",
+      "service_port": "42",
+      "container_port": "42",
+      "priority": "10"
+    },
+    {
+      "name": "http",
+      "service_port": "80",
+      "container_port": "80",
+      "priority": "10"
+    },
+    {
+      "name": "rpc",
+      "service_port": "135",
+      "container_port": "135",
+      "priority": "10"
+    },
+    {
+      "name": "https",
+      "service_port": "443",
+      "container_port": "443",
+      "priority": "10"
+    },
+    {
+      "name": "smb",
+      "service_port": "445",
+      "container_port": "445",
+      "priority": "10"
+    },
+    {
+      "name": "microsoftsql",
+      "service_port": "1433",
+      "container_port": "1433",
+      "priority": "10"
+    },
+    {
+      "name": "pptp",
+      "service_port": "1723",
+      "container_port": "1723",
+      "priority": "10"
+    },
+    {
+      "name": "mqtt",
+      "service_port": "1883",
+      "container_port": "1883",
+      "priority": "10"
+    },
+    {
+      "name": "ssdp",
+      "service_port": "1900",
+      "container_port": "1900",
+      "priority": "10"
+    },
+    {
+      "name": "mysql",
+      "service_port": "3306",
+      "container_port": "3306",
+      "priority": "10"
+    },
+    {
+      "name": "sip",
+      "service_port": "5060",
+      "container_port": "5060",
+      "priority": "10"
+    },
+    {
+      "name": "sip-tls",
+      "service_port": "5061",
+      "container_port": "5061",
+      "priority": "10"
+    },
+    {
+      "name": "memecachedb",
+      "service_port": "11211",
+      "container_port": "11211",
+      "priority": "10"
+    }
+  ]
+},
+{
+  "image": "pyrdp",
+  "volumes": [
+    {
+      "host": "pyrdp_output",
+      "container": "/home/pyrdp/pyrdp_output"
+    }
+  ],
+  "environment": [],
+  "services": [
+    {
+      "name": "rdp",
+      "service_port": "3389",
+      "container_port": "3389",
+      "priority": "10"
+    }
+  ]
+},
+{
+  "image": "dshp",
+  "volumes": [],
+  "environment": [
+    {
+      "name": "SMTP_SERVER",
+      "value": "<yoursmtpserveraddress>"
+    },
+    {
+      "name": "SMTP_TLS",
+      "value": "True "
+    },
+    {
+      "name": "SMTP_USER",
+      "value": "<yourmailuser> "
+    },
+    {
+      "name": "MAIL_FROM",
+      "value": "<fakeemail@yourmailprovider.com> "
+    },
+    {
+      "name": "SMTP_PASS",
+      "value": "<yourmailpass> "
+    },
+    {
+      "name": "SMTP_PORT",
+      "value": "smtpserverport>"
+    },
+    {
+      "name": "MAIL_TO",
+      "value": "yourmail@mailprovider.com "
+    },
+    {
+      "name": "HANDLERS",
+      "value": "'emailer.py' naorlivne/dshp"
+    }
+  ],
+  "services": [
+    {
+      "name": "smtp",
+      "service_port": "587",
+      "container_port": "8888",
+      "priority": "10"
+    }
+  ]
+},
+{
+  "image": "fnzv/yafh-telnetd",
+  "volumes": [],
+  "environment": [],
+  "services": [
+    {
+      "name": "telnet",
+      "service_port": "23",
+      "container_port": "23",
+      "priority": "10"
+    }
+  ]
+},
+{
+  "image": "heralding",
+  "volumes": [],
+  "environment": [],
+  "services": [
+    {
+      "name": "pop3",
+      "service_port": "110",
+      "container_port": "110",
+      "priority": "10"
+    },
+    {
+      "name": "pop3s",
+      "service_port": "995",
+      "container_port": "995",
+      "priority": "10"
+    },
+    {
+      "name": "smtp",
+      "service_port": "25",
+      "container_port": "25",
+      "priority": "10"
+    },
+    {
+      "name": "http",
+      "service_port": "80",
+      "container_port": "80",
+      "priority": "10"
+    },
+    {
+      "name": "https",
+      "service_port": "443",
+      "container_port": "443",
+      "priority": "10"
+    },
+    {
+      "name": "vnc",
+      "service_port": "5900",
+      "container_port": "5900",
+      "priority": "10"
+    },
+    {
+      "name": "telnet",
+      "service_port": "23",
+      "container_port": "23",
+      "priority": "10"
+    },
+    {
+      "name": "ftp",
+      "service_port": "21",
+      "container_port": "21",
+      "priority": "10"
+    },
+    {
+      "name": "imap",
+      "service_port": "143",
+      "container_port": "143",
+      "priority": "10"
+    },
+    {
+      "name": "mysql",
+      "service_port": "3306",
+      "container_port": "3306",
+      "priority": "10"
+    },
+    {
+      "name": "socks5",
+      "service_port": "1080",
+      "container_port": "1080",
+      "priority": "10"
+    },
+    {
+      "name": "ssh",
+      "service_port": "22",
+      "container_port": "2222",
+      "priority": "10"
+    },
+    {
+      "name": "postgres",
+      "service_port": "5432",
+      "container_port": "5432",
+      "priority": "10"
+    },
+    {
+      "name": "imaps",
+      "service_port": "993",
+      "container_port": "993",
+      "priority": "10"
+    }
+  ]
+},
+{
+  "image": "jekil/udpot",
+  "volumes": [],
+  "environment": [],
+  "services": [
+    {
+      "name": "dns",
+      "service_port": "5053/udp",
+      "container_port": "5053/udp",
+      "priority": "10"
+    },
+    {
+      "name": "dns",
+      "service_port": "5053/tcp",
+      "container_port": "5053/tcp",
+      "priority": "10"
+    }
+  ]
+},
+{
+  "image": "cowrie/cowrie",
+  "volumes": [],
+  "environment": [],
+  "services": [
+    {
+      "name": "ssh",
+      "service_port": "22",
+      "container_port": "2222",
+      "priority": "10"
+    }
+  ]
+}]

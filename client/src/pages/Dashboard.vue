@@ -12,25 +12,13 @@
                 <h2 class="card-title">{{ $t("dashboard.performance") }}</h2>
               </div>
               <div class="col-sm-6">
-                <div
-                  class="btn-group btn-group-toggle"
-                  :class="isRTL ? 'float-left' : 'float-right'"
-                  data-toggle="buttons"
-                >
-                  <label
-                    v-for="(option, index) in bigLineChartCategories"
-                    :key="option"
-                    class="btn btn-sm btn-primary btn-simple"
-                    :class="{ active: bigLineChart.activeIndex === index }"
-                    :id="index"
-                  >
-                    <input
-                      type="radio"
-                      @click="initBigChart(index)"
-                      name="options"
-                      autocomplete="off"
-                      :checked="bigLineChart.activeIndex === index"
-                    />
+                <div class="btn-group btn-group-toggle" :class="isRTL ? 'float-left' : 'float-right'"
+                  data-toggle="buttons">
+                  <label v-for="(option, index) in bigLineChartCategories" :key="option"
+                    class="btn btn-sm btn-primary btn-simple" :class="{ active: bigLineChart.activeIndex === index }"
+                    :id="index">
+                    <input type="radio" @click="initBigChart(index)" name="options" autocomplete="off"
+                      :checked="bigLineChart.activeIndex === index" />
                     {{ option }}
                   </label>
                 </div>
@@ -38,15 +26,9 @@
             </div>
           </template>
           <div class="chart-area">
-            <line-chart
-              style="height: 100%"
-              ref="bigChart"
-              chart-id="big-line-chart"
-              :chart-data="bigLineChart.chartData"
-              :gradient-colors="bigLineChart.gradientColors"
-              :gradient-stops="bigLineChart.gradientStops"
-              :extra-options="bigLineChart.extraOptions"
-            >
+            <line-chart style="height: 100%" ref="bigChart" chart-id="big-line-chart"
+              :chart-data="bigLineChart.chartData" :gradient-colors="bigLineChart.gradientColors"
+              :gradient-stops="bigLineChart.gradientStops" :extra-options="bigLineChart.extraOptions">
             </line-chart>
           </div>
         </card>
@@ -62,14 +44,9 @@
             </h3>
           </template>
           <div class="chart-area">
-            <line-chart
-              style="height: 100%"
-              chart-id="purple-line-chart"
-              :chart-data="purpleLineChart.chartData"
-              :gradient-colors="purpleLineChart.gradientColors"
-              :gradient-stops="purpleLineChart.gradientStops"
-              :extra-options="purpleLineChart.extraOptions"
-            >
+            <line-chart style="height: 100%" chart-id="purple-line-chart" :chart-data="purpleLineChart.chartData"
+              :gradient-colors="purpleLineChart.gradientColors" :gradient-stops="purpleLineChart.gradientStops"
+              :extra-options="purpleLineChart.extraOptions">
             </line-chart>
           </div>
         </card>
@@ -83,13 +60,8 @@
             </h3>
           </template>
           <div class="chart-area">
-            <bar-chart
-              style="height: 100%"
-              chart-id="blue-bar-chart"
-              :chart-data="blueBarChart.chartData"
-              :gradient-stops="blueBarChart.gradientStops"
-              :extra-options="blueBarChart.extraOptions"
-            >
+            <bar-chart style="height: 100%" chart-id="blue-bar-chart" :chart-data="blueBarChart.chartData"
+              :gradient-stops="blueBarChart.gradientStops" :extra-options="blueBarChart.extraOptions">
             </bar-chart>
           </div>
         </card>
@@ -103,13 +75,8 @@
             </h3>
           </template>
           <div class="chart-area">
-            <line-chart
-              style="height: 100%"
-              chart-id="green-line-chart"
-              :chart-data="greenLineChart.chartData"
-              :gradient-stops="greenLineChart.gradientStops"
-              :extra-options="greenLineChart.extraOptions"
-            >
+            <line-chart style="height: 100%" chart-id="green-line-chart" :chart-data="greenLineChart.chartData"
+              :gradient-stops="greenLineChart.gradientStops" :extra-options="greenLineChart.extraOptions">
             </line-chart>
           </div>
         </card>
@@ -123,23 +90,18 @@
               {{ $t("dashboard.tasks", { count: 5 }) }}
             </h6>
             <p class="card-category d-inline">{{ $t("dashboard.today") }}</p>
-            <base-dropdown
-              menu-on-right=""
-              tag="div"
-              title-classes="btn btn-link btn-icon"
-              aria-label="Settings menu"
-              :class="{ 'float-left': isRTL }"
-            >
+            <base-dropdown menu-on-right="" tag="div" title-classes="btn btn-link btn-icon" aria-label="Settings menu"
+              :class="{ 'float-left': isRTL }">
               <i slot="title" class="tim-icons icon-settings-gear-63"></i>
               <a class="dropdown-item" href="#pablo">{{
                 $t("dashboard.dropdown.action")
-              }}</a>
+                }}</a>
               <a class="dropdown-item" href="#pablo">{{
                 $t("dashboard.dropdown.anotherAction")
-              }}</a>
+                }}</a>
               <a class="dropdown-item" href="#pablo">{{
                 $t("dashboard.dropdown.somethingElse")
-              }}</a>
+                }}</a>
             </base-dropdown>
           </template>
           <div class="table-full-width table-responsive">
@@ -167,6 +129,7 @@ import * as chartConfigs from "@/components/Charts/config";
 import TaskList from "./Dashboard/TaskList";
 import UserTable from "./Dashboard/UserTable";
 import config from "@/config";
+import axios from 'axios';
 
 export default {
   components: {
@@ -265,16 +228,16 @@ export default {
       blueBarChart: {
         extraOptions: chartConfigs.barChartOptions,
         chartData: {
-          labels: ["USA", "GER", "AUS", "UK", "RO", "BR"],
+          labels: ["Running", "Poweroff", "Aborted", "Unknown"],
           datasets: [
             {
-              label: "Countries",
+              label: "VMs",
               fill: true,
               borderColor: config.colors.info,
               borderWidth: 2,
               borderDash: [],
               borderDashOffset: 0.0,
-              data: [53, 20, 10, 80, 100, 45],
+              data: [0, 0, 0, 0],
             },
           ],
         },
@@ -295,6 +258,44 @@ export default {
     },
   },
   methods: {
+    getVMs() {
+      const path = "http://localhost:5000/vm/list";
+      axios
+        .get(path)
+        .then((res) => {
+          this.vms = res.data;
+          console.log(res.data)
+
+          const statusCount = {
+            running: 0,
+            poweroff: 0,
+            aborted: 0,
+            unknown: 0,
+          };
+          
+          res.data.forEach(vm => {
+          const status = vm.status.toLowerCase();
+          if (statusCount.hasOwnProperty(status)) {
+            statusCount[status]++;
+          } else {
+            statusCount.unknown++;
+          }
+        });
+        console.log(statusCount)
+
+        this.blueBarChart.chartData.datasets[0].data = [
+          statusCount.running,
+          statusCount.poweroff,
+          statusCount.aborted,
+          statusCount.unknown
+        ];
+        return statusCount
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+
+    },
     initBigChart(index) {
       let chartData = {
         datasets: [
@@ -335,6 +336,8 @@ export default {
     },
   },
   mounted() {
+    this.getVMs();
+    
     this.i18n = this.$i18n;
     if (this.enableRTL) {
       this.i18n.locale = "ar";

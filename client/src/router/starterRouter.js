@@ -37,7 +37,7 @@ export default new Router({
           path: "dashboard",
           name: "dashboard",
           components: { default: Dashboard },
-          beforeEnter: authenticationGuard,
+          ///beforeEnter: authenticationGuard,
 
         },
         {

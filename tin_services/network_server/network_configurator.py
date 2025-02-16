@@ -62,32 +62,6 @@ def create_int(veth_id):
             print(f"Created OVS {ovs_bridge}")
         subprocess.run(["sudo", "ovs-vsctl", "set", "bridge", ovs_bridge, "protocols=OpenFlow13", "--", "set-controller", ovs_bridge, f"tcp:{ip_onos}:6653"], check=True)
 
-        # #if veth already exists
-        # if(os.path.exists(f"/sys/class/net/{veth_name}")):
-        #     if (not veth_name in subprocess.check_output(["sudo", "ovs-vsctl", "show"], text=True)):
-        #         subprocess.run(["sudo", "ovs-vsctl", "add-port", ovs_bridge, veth_name], check=True)
-        #     #check if down
-        #     state = subprocess.check_output(["ip", "link", "show", veth_name], text=True)
-        #     if ("state DOWN" in state):
-        #         subprocess.run(["sudo", "ip", "link", "set", veth_name, "up"], check=True)
-        #         subprocess.run(["sudo", "ip", "link", "set", f"{veth_name}-peer", "up"], check=True)
-        #     return jsonify({'status': 'Interface already exists and it is up.', 'interface': f'{veth_name}-peer'}), 200
-        
-        # #if veth does not exist
-        # subprocess.run(["sudo", "ip", "link", "add", veth_name, "type", "veth", "peer", "name", f"{veth_name}-peer"], check=True)
-        
-        # if not (f"Port {veth_name}" in (subprocess.check_output(["sudo", "ovs-vsctl", "show"], text=True))):
-        #     subprocess.run(["sudo", "ovs-vsctl", "add-port", ovs_bridge, veth_name], check=True)
-        
-        # subprocess.run(["sudo", "ip", "link", "set", veth_name, "up"], check=True)
-        # subprocess.run(["sudo", "ip", "link", "set", f"{veth_name}-peer", "up"], check=True)
-
-        # mac = subprocess.run(["cat", f"/sys/class/net/{veth_name}/address"], capture_output=True, text=True, check=True)
-        # return jsonify({'status': 'Network configured', 'interface': f'{veth_name}-peer','mac':mac.stdout.strip()}), 201
-
-
-
-
         # if veth doesn't exist
         if not (os.path.exists(f"/sys/class/net/{veth_name}")):
             subprocess.run(["sudo", "ip", "link", "add", veth_name, "type", "veth", "peer", "name", f"{veth_name}-peer"], check=True)

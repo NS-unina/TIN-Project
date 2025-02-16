@@ -20,13 +20,12 @@
                      >
                   Add Container
                   </button>
-
-                  <LogoutButton/>
                   
                   <div v-for="(containers, vmName) in grouped_containers" :key="vmName">
 
                   <div v-if="vmName === vmData.name"> 
-                  <table class="table table-hover">
+                  <table  class="table table-hover" >
+                    
                      <thead>
                         <tr>
                            <th scope="col">Container Name</th>
@@ -34,9 +33,8 @@
                            <th scope="col">Status</th>
                            <th scope="col">Controls</th>
                            <th scope="col">Modify</th>
-                           <th scope="col">Services</th>
+                           <th scope="col">Services </th>
 
-                           <th></th>
                         </tr> 
                      </thead>
                      <tbody>
@@ -98,11 +96,24 @@
                               </button>
                            </td>             
 
+                           <td>
+
+                      
+                                <tr v-for="service in container.services" :key="service.name">
+                                  
+                                
+                            
+                                  <td >{{ service.name }}</td>
+                                  <td v-show="showColumns">{{ service.service_port }}</td>
+                                  <td v-show="showColumns">{{ service.container_port }}</td>
+                                  <td v-show="showColumns">{{ service.priority }}</td>
+                                  <td v-show="showColumns">{{ service.vm_port }}</td>
+                                  <td v-show="showColumns">{{ service.busy }}</td>
+                                </tr>
+                          </td>
+                              
 
 
-
-            <td>{{ container.services[0].vm_port }}</td>
-            <td>{{ container.services[0].container_port }}</td>
 
 
 
@@ -284,9 +295,7 @@
 </template>
 <script>
    import axios from "axios";
-   import LogoutButton from "@/components/Buttons/logout-button.vue";
 
-   
    export default {
      data() {
        return {
@@ -330,7 +339,6 @@
            .catch((error) => {
              console.error(error);
            });
-            
        },
    
        getContainers(){

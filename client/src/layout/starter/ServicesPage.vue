@@ -12,7 +12,6 @@ import { selectedVm } from "../../main.js";
       <LoginButton />
     </template>
     <template v-if="$auth0.isAuthenticated">
-      <LogoutButton />
     </template>
   </div>
 
@@ -288,9 +287,6 @@ import { selectedVm } from "../../main.js";
 
 <script>
 import axios from "axios";
-import LoginButton from "@/components/Buttons/login-button.vue";
-import LogoutButton from "@/components/Buttons/logout-button.vue";
-import SignupButton from "@/components/Buttons/signup-button.vue";
 
 
 export default {

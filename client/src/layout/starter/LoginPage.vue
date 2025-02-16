@@ -8,7 +8,7 @@ import { selectedVm } from "../../main.js";
 
     <div class="row">
       <div class="col-sm-10">
-        <h1>TIN PROJECT</h1>
+        <h1>TIN CAN PROJECT</h1>
         <hr />
         <br /><br />
        
@@ -54,7 +54,7 @@ import { selectedVm } from "../../main.js";
                         <!---->
                         <div class="card-header">
                             <img
-                            src="img/honeycomb.png"
+                            src="img/TIN-logo.png"
                             alt="Card image"
                             class="card-img"
                           />

@@ -5,22 +5,22 @@
         "version": "1.0.0"
     },
     "paths": {
-        "/network/create_int/{vm_id}": {
+        "/network/create_int/{veth_id}": {
             "post": {
                 "tags": [
                     "Network"
                 ],
-                "description": "Creates a virtual network interface for a specified VM and attaches it to an Open vSwitch bridge (if it does not exists it creates it).",
+                "description": "Creates a pair of virtual network interface and attaches one of them to an Open vSwitch bridge (if it does not exists it creates it).",
                 "produces": [
                     "application/json"
                 ],
                 "parameters": [
                     {
                         "in": "path",
-                        "name": "vm_id",
+                        "name": "veth_id",
                         "required": true,
                         "type": "string",
-                        "description": "The unique identifier of the virtual machine for which the network interface is created."
+                        "description": "The unique identifier for the veth name."
                     }
                 ],
                 "responses": {
@@ -42,7 +42,7 @@
                 }
             }
         },
-        "/network/delete_int/{vm_id}": {
+        "/network/delete_int/{veth_id}": {
             "delete": {
                 "tags": [
                     "Network"
@@ -54,10 +54,10 @@
                 "parameters": [
                     {
                         "in": "path",
-                        "name": "vm_id",
+                        "name": "veth_id",
                         "required": true,
                         "type": "string",
-                        "description": "The unique identifier of the virtual machine whose network interface is being deleted."
+                        "description": "The unique identifier for the veth name."
                     }
                 ],
                 "responses": {

@@ -44,82 +44,92 @@ except Exception as e:
 
 
 # ********[ API ]********
-@app.route('/network/create_int/<vm_id>', methods=['POST'])
-def create_int(vm_id):
-
+@app.route('/network/create_int/<veth_id>', methods=['POST'])
+def create_int(veth_id):
 
     try:
-        validated_data = VMIdSchema().load({"vm_id":vm_id})
+        validated_data = VethIdSchema().load({"veth_id":veth_id})
     except ValidationError as e:
         return jsonify({"error": f"{e}"}), 400
 
     #Interface name
-    veth_name = f"veth-{vm_id}"
+    veth_name = f"veth-{veth_id}"
 
     try:
         #check if OVS exists, if not creates it
         if(not os.path.exists(f"/sys/class/net/{ovs_bridge}")):
-            return jsonify({'error': 'Ovs does not exists'}), 404
+            subprocess.run(["sudo", "ovs-vsctl", "add-br", ovs_bridge], check=True)
+            print(f"Created OVS {ovs_bridge}")
+        subprocess.run(["sudo", "ovs-vsctl", "set", "bridge", ovs_bridge, "protocols=OpenFlow13", "--", "set-controller", ovs_bridge, f"tcp:{ip_onos}:6653"], check=True)
 
-        #check if veth already exists
-        if(os.path.exists(f"/sys/class/net/{veth_name}")):
-            ovs_connection = subprocess.check_output(["sudo", "ovs-vsctl", "show"], text=True)
-            if (not veth_name in ovs_connection):
-                subprocess.run(["sudo", "ovs-vsctl", "add-port", ovs_bridge, veth_name], check=True)
-            #check if down
-            state = subprocess.check_output(["ip", "link", "show", veth_name], text=True)
-            if ("state DOWN" in state):
-                subprocess.run(["sudo", "ip", "link", "set", veth_name, "up"], check=True)
-                subprocess.run(["sudo", "ip", "link", "set", f"{veth_name}-peer", "up"], check=True)
-            return jsonify({'status': 'Interface already exists and it is up.', 'interface': f'{veth_name}-peer'}), 200
+        # #if veth already exists
+        # if(os.path.exists(f"/sys/class/net/{veth_name}")):
+        #     if (not veth_name in subprocess.check_output(["sudo", "ovs-vsctl", "show"], text=True)):
+        #         subprocess.run(["sudo", "ovs-vsctl", "add-port", ovs_bridge, veth_name], check=True)
+        #     #check if down
+        #     state = subprocess.check_output(["ip", "link", "show", veth_name], text=True)
+        #     if ("state DOWN" in state):
+        #         subprocess.run(["sudo", "ip", "link", "set", veth_name, "up"], check=True)
+        #         subprocess.run(["sudo", "ip", "link", "set", f"{veth_name}-peer", "up"], check=True)
+        #     return jsonify({'status': 'Interface already exists and it is up.', 'interface': f'{veth_name}-peer'}), 200
         
-        subprocess.run(["sudo", "ip", "link", "add", veth_name, "type", "veth", "peer", "name", f"{veth_name}-peer"], check=True)
+        # #if veth does not exist
+        # subprocess.run(["sudo", "ip", "link", "add", veth_name, "type", "veth", "peer", "name", f"{veth_name}-peer"], check=True)
         
-        if not (f"Port {veth_name}" in (subprocess.check_output(["sudo", "ovs-vsctl", "show"], text=True))):
+        # if not (f"Port {veth_name}" in (subprocess.check_output(["sudo", "ovs-vsctl", "show"], text=True))):
+        #     subprocess.run(["sudo", "ovs-vsctl", "add-port", ovs_bridge, veth_name], check=True)
+        
+        # subprocess.run(["sudo", "ip", "link", "set", veth_name, "up"], check=True)
+        # subprocess.run(["sudo", "ip", "link", "set", f"{veth_name}-peer", "up"], check=True)
+
+        # mac = subprocess.run(["cat", f"/sys/class/net/{veth_name}/address"], capture_output=True, text=True, check=True)
+        # return jsonify({'status': 'Network configured', 'interface': f'{veth_name}-peer','mac':mac.stdout.strip()}), 201
+
+
+
+
+        # if veth doesn't exist
+        if not (os.path.exists(f"/sys/class/net/{veth_name}")):
+            subprocess.run(["sudo", "ip", "link", "add", veth_name, "type", "veth", "peer", "name", f"{veth_name}-peer"], check=True)
+
+        # if not already in ovsbridge
+        if (not veth_name in subprocess.check_output(["sudo", "ovs-vsctl", "show"], text=True)):
             subprocess.run(["sudo", "ovs-vsctl", "add-port", ovs_bridge, veth_name], check=True)
-        
-        subprocess.run(["sudo", "ip", "link", "set", veth_name, "up"], check=True)
-        subprocess.run(["sudo", "ip", "link", "set", f"{veth_name}-peer", "up"], check=True)
 
-        mac = subprocess.run(
-            ["cat", f"/sys/class/net/{veth_name}/address"],
-            capture_output=True,
-            text=True,
-            check=True
-        )
+        # status UP
+        subprocess.run(["sudo", "ip", "link", "set", f"{veth_name}-peer", "up"], check=True)
+        subprocess.run(["sudo", "ip", "link", "set", veth_name, "up"], check=True)
+
+        mac = subprocess.run(["cat", f"/sys/class/net/{veth_name}/address"], capture_output=True, text=True, check=True)
         return jsonify({'status': 'Network configured', 'interface': f'{veth_name}-peer','mac':mac.stdout.strip()}), 201
+
     except subprocess.CalledProcessError as e:
         return jsonify({'error': str(e)}), 500
 
 
 
-@app.route('/network/delete_int/<vm_id>', methods=['DELETE'])
-def delete_int(vm_id):
+@app.route('/network/delete_int/<veth_id>', methods=['DELETE'])
+def delete_int(veth_id):
     
-
     try:
-        validated_data = VMIdSchema().load({"vm_id":vm_id})
+        validated_data = VethIdSchema().load({"veth_id":veth_id})
     except ValidationError as e:
         return jsonify({"error": f"{e}"}), 400    
 
-
     #Interface name
-    veth_name = f"veth-{vm_id}"
+    veth_name = f"veth-{veth_id}"
 
     try:
-        #check if OVS exists, if not creates it
-        if(not os.path.exists(f"/sys/class/net/{ovs_bridge}")):
-            return jsonify('error, the OVS does not exists'), 500
-
-        #check if veth exists
+        #Check if veth exists
         if(not os.path.exists(f"/sys/class/net/{veth_name}")):
-            return jsonify(f'error, the interface {veth_name} does not exists'), 500
-
-        if (f"Port {veth_name}" in (subprocess.check_output(["sudo", "ovs-vsctl", "show"], text=True))):
-            subprocess.run(["sudo", "ovs-vsctl", "del-port", ovs_bridge, veth_name], check=True)
+            return jsonify({'error': f'The interface {veth_name} does not exists'}), 500
+        
+        #If bridge exists, delete the veth port
+        if(os.path.exists(f"/sys/class/net/{ovs_bridge}")):
+            if (f"Port {veth_name}" in (subprocess.check_output(["sudo", "ovs-vsctl", "show"], text=True))):
+                subprocess.run(["sudo", "ovs-vsctl", "del-port", ovs_bridge, veth_name], check=True)
         
         subprocess.run(["sudo", "ip", "link", "delete", veth_name], check=True)
-
         return jsonify({'status': 'Network interface deleted', 'interface deleted': f'{veth_name}-peer'}), 200
 
     except subprocess.CalledProcessError as e:

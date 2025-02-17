@@ -10,12 +10,11 @@ from config import DevelopmentConfig
 
 # ********[ LOAD CONFIGURATION FROM config.py ]********
 app = Flask(__name__)
-#app.config.from_object(__name__)
 app.config.from_object(DevelopmentConfig)  # Load the configuration
 
-
-ip_host = app.config['IP_HOST']
-ip_onos = app.config['IP_ONOS']
+IP_HOST = app.config['IP_HOST']
+IP_ONOS = app.config['IP_ONOS']
+PORT_ONOS = app.config['PORT_ONOS']
 ovs_bridge = app.config['OVS_BRIDGE']
 
 
@@ -25,7 +24,7 @@ try:
     if(not os.path.exists(f"/sys/class/net/{ovs_bridge}")):
         subprocess.run(["sudo", "ovs-vsctl", "add-br", ovs_bridge], check=True)
         print(f"Created OVS {ovs_bridge}")
-    subprocess.run(["sudo", "ovs-vsctl", "set", "bridge", ovs_bridge, "protocols=OpenFlow13", "--", "set-controller", ovs_bridge, f"tcp:{ip_onos}:6653"], check=True)
+    subprocess.run(["sudo", "ovs-vsctl", "set", "bridge", ovs_bridge, "protocols=OpenFlow13", "--", "set-controller", ovs_bridge, f"tcp:{IP_ONOS}:{PORT_ONOS}"], check=True)
     
     #connect bridge to host
     if(not os.path.exists(f"/sys/class/net/host-veth")):
@@ -34,7 +33,7 @@ try:
     #check if host-veth down
     state = subprocess.check_output(["ip", "link", "show", "host-veth"], text=True)
     if ("state DOWN" in state):
-        subprocess.run(["sudo", "ip", "addr", "add", ip_host, "dev", "host-veth"], check=True)
+        subprocess.run(["sudo", "ip", "addr", "add", IP_HOST, "dev", "host-veth"], check=True)
         subprocess.run(["sudo", "ip", "link", "set", "host-veth", "up"], check=True)
 
     print ("\nSTARTUP DONE")
@@ -60,7 +59,7 @@ def create_int(veth_id):
         if(not os.path.exists(f"/sys/class/net/{ovs_bridge}")):
             subprocess.run(["sudo", "ovs-vsctl", "add-br", ovs_bridge], check=True)
             print(f"Created OVS {ovs_bridge}")
-        subprocess.run(["sudo", "ovs-vsctl", "set", "bridge", ovs_bridge, "protocols=OpenFlow13", "--", "set-controller", ovs_bridge, f"tcp:{ip_onos}:6653"], check=True)
+        subprocess.run(["sudo", "ovs-vsctl", "set", "bridge", ovs_bridge, "protocols=OpenFlow13", "--", "set-controller", ovs_bridge, f"tcp:{IP_ONOS}:{PORT_ONOS}"], check=True)
 
         # if veth doesn't exist
         if not (os.path.exists(f"/sys/class/net/{veth_name}")):

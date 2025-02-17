@@ -82,7 +82,21 @@ def create_container(vm_ip,CONTAINER_SERVER_PORT,service_port):
         return response.json()["container"]
     else:
         raise CreateContainerFailed (f"{response.json}", error_code=response.status_code)
-    
+
+
+def ping_server (SERVER_URL, server):
+ 
+    try:
+        #Request to vm_configurator
+        url= f"{SERVER_URL}/{server}/ping"
+        print (f"Sending request to '{url}' ...")
+        response=requests.get(url)
+        if (response.status_code == 200):
+            return True
+        else:
+            return False
+    except requests.exceptions.ConnectionError:
+        return False
 
 def get_vm_ip_mac_by_name (vm_name, vmList):
     for vm in vmList:
@@ -232,6 +246,140 @@ def create_flow_tcp(ONOS_URL, ONOS_AUTH_USERNAME, ONOS_AUTH_PASSWORD, ovs_id,att
         print (response.json())
     else:
         raise CreateFlowFailed ("Error: Flow { honeypot -> attacker } not created.", error_code=response.status_code)
+
+
+
+
+
+def create_flow_udp(ONOS_URL, ONOS_AUTH_USERNAME, ONOS_AUTH_PASSWORD, ovs_id,attacker_ip,forbidden_ip,forbidden_port,container_ip,container_mac,container_vm_port):
+        
+
+    udp_flow_attacker_honeypot={
+    "flows": [
+        {
+            "priority": 50000,
+            "timeout": 0,
+            "isPermanent": "true",
+            "deviceId": ovs_id,
+            "treatment": {
+                "instructions": [
+                    {
+                        "type": "L4MODIFICATION", 
+                        "subtype":"UDP_DST", 
+                        "udpPort":container_vm_port 
+                    },
+                    {
+                        "type": "L3MODIFICATION",
+                        "subtype": "IPV4_DST",
+                        "ip": container_ip
+                    },
+                    {
+                        "type": "L2MODIFICATION",
+                        "subtype": "ETH_DST",
+                        "mac": container_mac
+                    },
+                    {
+                        "type": "OUTPUT",
+                        "port": "NORMAL"
+                    }
+                ]
+            },
+            "selector": {
+                "criteria": [
+                    {
+                        "type": "ETH_TYPE",
+                        "ethType": "0x0800"
+                    },
+                    {
+                        "type": "IP_PROTO",
+                        "protocol": 6
+                    },
+                    {
+                        "type": "IPV4_SRC",
+                        "ip": attacker_ip+"/32"
+                    },
+                    {
+                        "type": "IPV4_DST",
+                        "ip": forbidden_ip+"/32"
+                    },
+                    {   
+                        "type":"UDP_DST", 
+                        "udpPort":forbidden_port
+                    }
+
+                ]
+            }
+              }
+          ]
+      }
+
+    #Request to onos flow
+    url= f"{ONOS_URL}/onos/v1/flows"
+    response=requests.post(url,json=udp_flow_attacker_honeypot, auth=(ONOS_AUTH_USERNAME,ONOS_AUTH_PASSWORD))
+    if (response.status_code == 200):
+        print (response.json())
+    else:
+        raise CreateFlowFailed ("Error: Flow { attacker -> honeypot } not created.", error_code=response.status_code)
+
+
+    udp_flow_honeypot_attacker={
+    "flows": [
+        {
+            "priority": 50000,
+            "timeout": 0,
+            "isPermanent": "true",
+            "deviceId": ovs_id,
+            "treatment": {
+                "instructions": [
+                  {
+                        "type": "L4MODIFICATION", 
+                        "subtype":"UDP_SRC", 
+                        "udpPort": forbidden_port
+                    },
+                    {
+                        "type": "L3MODIFICATION",
+                        "subtype": "IPV4_SRC",
+                        "ip": forbidden_ip
+                    },
+                    {
+                        "type": "OUTPUT",
+                        "port": "NORMAL"
+                    }
+                ]
+            },
+            "selector": {
+                "criteria": [
+                    {
+                        "type": "ETH_TYPE",
+                        "ethType": "0x0800"
+                    },
+                    {
+                        "type": "IPV4_SRC",
+                        "ip": container_ip+"/32"
+                    },
+                    {
+                        "type": "IPV4_DST",
+                        "ip": attacker_ip+"/32"
+                    },
+                    {   
+                        "type":"UDP_SRC", 
+                        "udpPort": container_vm_port
+                    }
+
+                ]
+            }
+        }
+        ]
+    }
+    
+    #Request to onos flow
+    url= f"{ONOS_URL}/onos/v1/flows"
+    response=requests.post(url,json=udp_flow_honeypot_attacker, auth=(ONOS_AUTH_USERNAME,ONOS_AUTH_PASSWORD))
+    if (response.status_code == 200):
+        print (response.json())
+    else:
+        raise CreateFlowFailed ("Error: Flow { honeypot -> attacker } not created.", error_code=response.status_code)
+
 
 
 

@@ -178,7 +178,7 @@ public class AppComponent {
                                 + "}";
                             log.info("payload_redirection" + payload_redirection);
                             HttpRequest request_redirection = HttpRequest.newBuilder()
-                                .uri(URI.create("http://"+tinIp+":"+tinPort+"/tinmanager/ping"))
+                                .uri(URI.create("http://"+tinIp+":"+tinPort+"/tinmanager/tcp/addflow"))
                                 .header("Content-Type", "application/json")
                                 .POST(HttpRequest.BodyPublishers.ofString(payload_redirection))
                                 .build();
@@ -206,7 +206,7 @@ public class AppComponent {
                                 + "\"ovs_id\": \"" + deviceId + "\""
                                 + "}";                            
                                 HttpRequest request = HttpRequest.newBuilder()
-                                .uri(URI.create("http://"+tinIp+":"+tinPort+"/tinmanager/ping"))
+                                .uri(URI.create("http://"+tinIp+":"+tinPort+"/tinmanager/udp/addflow"))
                                 .header("Content-Type", "application/json")
                                 .POST(HttpRequest.BodyPublishers.ofString(payload_redirection))
                                 .build();

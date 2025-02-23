@@ -135,14 +135,15 @@ def add_tcp_flow():
         flow_mac=vm_ip_mac["mac"]
         for service in container["services"]:
             if(service["service_port"]==dst_port):
-                flow_port=service["vm_port"]
-        
+                flow_port=service["vm_port"]   
+
+        #Set 'busy'
+        if not set_busy(f"http://{flow_ip}:{CONTAINER_SERVER_PORT}", container["vm_name"]):
+            return jsonify({'error': 'could not set container as busy'}), 500
+
         #Creating flow
         print (f"Creating tcp flow: ip '{flow_ip}', port '{flow_port}', mac '{flow_mac}'")
         #create_flow_tcp(ONOS_URL, ONOS_AUTH_USERNAME, ONOS_AUTH_PASSWORD, ovs_id, src_ip, dst_ip, dst_port, container_ip, container_mac,container_vm_port)
-
-        #Set 'busy'
-        
 
         return jsonify({"message":  "Flow successfully created!"}), 201
     

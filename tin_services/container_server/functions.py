@@ -65,7 +65,7 @@ def search_container_by_service (service_port, collection):
         {
             "$match": {
                 "services.service_port": f"{service_port}",
-                "services.busy": "False",
+                "busy": "False",
                 "status":"running"
             }
         },
@@ -102,6 +102,7 @@ def create_item_list(container, all_services, containerCollection):
         "image": str(container.image),
         "status": container.status,
         "vm_name": hostname,
+        "busy": "False",
         "services": all_services["services"]
     }
 

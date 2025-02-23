@@ -97,6 +97,21 @@ def ping_server (SERVER_URL, server):
             return False
     except requests.exceptions.ConnectionError:
         return False
+    
+def set_busy (CONTAINER_SERVER_URL, container_name):
+ 
+    try:
+        #Request to container_configurator
+        url= f"{CONTAINER_SERVER_URL}/container/update/{container_name}"
+        print (f"Sending request to '{url}' ...")
+        payload={"busy":"True"}
+        response=requests.post(url,json=payload,headers={"Content-Type": "application/json"})
+        if (response.status_code == 200):
+            return True
+        else:
+            return False
+    except requests.exceptions.ConnectionError:
+        return False
 
 def get_vm_ip_mac_by_name (vm_name, vmList):
     for vm in vmList:

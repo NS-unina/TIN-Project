@@ -101,7 +101,7 @@ def create_container():
         else:
             container=client.containers.run(docker_image,detach=True, ports=port_list,volumes=volumes,environment=environment_variables)
 
-        # add the dynamically chosen port to the services list, and set the busy state to False
+        # add the dynamically chosen port to the services list
         container=client.containers.get(container.name)
         print(f"Container name: {container.name}")
         for container_port in container.attrs["NetworkSettings"]["Ports"]:
@@ -109,7 +109,6 @@ def create_container():
                 for service in all_services["services"]:
                     if(service["container_port"]==container_port.split("/")[0]):
                         service["vm_port"]=container.attrs["NetworkSettings"]["Ports"][container_port][0]["HostPort"]
-                        service["busy"]="False"
         
         #Add item to collection
         container=create_item_list(container, all_services, containerCollection)
@@ -195,7 +194,7 @@ def read_container():
     except pymongo.errors.ConnectionFailure as e:
         return jsonify({'error': 'Connection to database failed.'}), 500
     except Exception as e:
-        return jsonify({"error": f"Error in reading container list. {e}"}), 500
+        return jsonify({"error":f"Error in reading container list. {e}"}), 500
     
 
 #get container by service -returns the top priority container with the specified service
@@ -295,6 +294,33 @@ def container_number():
     except Exception as e:
         return jsonify({"error": f"Error in reading container list. {e}"}), 500
     
+
+@app.route('/container/update/<container_name>', methods=['POST'])
+def update_container(container_name):
+    data = request.json
+
+    try:
+        validated_data = ContainerNameSchema().load({"container_name":container_name})
+        validated_data = UpdateSchema().load(data)
+    except ValidationError as e:
+        return jsonify({"error": f"{e}"}), 400
+
+    busy = data.get('busy')
+
+    try:
+        update_item_list(container_name, "busy", busy, containerCollection)
+
+        return jsonify({'Container updated successfully.': f'{container_name}'}), 200
+
+    except ContainerNotFound as e:
+        return jsonify({"error": f"{e.message}"}), 404
+    except ItemNotModified as e:
+        return jsonify ({'message': f"{e.message}"}), 200
+    except pymongo.errors.ConnectionFailure as e:
+        return jsonify({'error': 'Connection to database failed.'}), 500
+    except Exception as e:
+        return jsonify({"error": e}), 500
+
 
 @app.route('/container/ping', methods=['GET'])
 def ping():

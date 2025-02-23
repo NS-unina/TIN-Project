@@ -56,3 +56,12 @@ class ServicePortSchema(Schema):
         required=True,
         validate=Range(min=1, max=65535, error="Service port must be between 1 and 65535.")
     )
+
+
+def validate_busy(value):
+    if value not in ["True", "False"]:
+        raise ValidationError("Busy must be equal to 'True' or 'False'.")
+
+class UpdateSchema(Schema):
+    busy = fields.String(required=True, validate=validate_busy)
+

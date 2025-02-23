@@ -143,7 +143,7 @@ public class AppComponent {
         HostId srcId = HostId.hostId(ethPacket.getSourceMAC());
         HostId dstId = HostId.hostId(ethPacket.getDestinationMAC());
         log.info("New connection detected: {} -> {}", srcId, dstId);
-        log.info("cringe" + ethPacket.getEtherType());
+        log.info("Eth type" + ethPacket.getEtherType());
 
         if (ethPacket.getEtherType() == Ethernet.TYPE_IPV4){
             IPv4 ipv4Packet = (IPv4) ethPacket.getPayload();

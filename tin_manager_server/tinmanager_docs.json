@@ -1,0 +1,169 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "TIN Manager API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "/tinmanager/tcp/addflow": {
+            "post": {
+                "tags": [
+                    "Flows Management"
+                ],
+                "description": "Creates a new flow to redirect the attacker to a honeypot.",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "src_ip": {
+                                    "type": "string"
+                                },
+                                "dst_ip": {
+                                    "type": "string"
+                                },
+                                "src_port": {
+                                    "type": "string"
+                                },
+                                "dst_port": {
+                                    "type": "string"
+                                },
+                                "ovs_id": {
+                                    "type": "string",
+                                    "description": "The id of the Open vSwitch where the flow is installed."
+                                }
+                            },
+                            "required": [
+                                "src_ip",
+                                "dst_ip",
+                                "src_port",
+                                "dst_port",
+                                "ovs_id"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created: Flow successfully created."
+                    },
+                    "400": {
+                        "description": "Bad Request: Input validation error."
+                    },
+                    "500": {
+                        "description": "Internal Server Error."
+                    }
+                }
+            }
+        },
+        "/tinmanager/udp/addflow": {
+            "post": {
+                "tags": [
+                    "Flows Management"
+                ],
+                "description": "Creates a new flow to redirect the attacker to a honeypot.",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "src_ip": {
+                                    "type": "string"
+                                },
+                                "dst_ip": {
+                                    "type": "string"
+                                },
+                                "src_port": {
+                                    "type": "string"
+                                },
+                                "dst_port": {
+                                    "type": "string"
+                                },
+                                "ovs_id": {
+                                    "type": "string",
+                                    "description": "The id of the Open vSwitch where the flow is installed."
+                                }
+                            },
+                            "required": [
+                                "src_ip",
+                                "dst_ip",
+                                "src_port",
+                                "dst_port",
+                                "ovs_id"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created: Flow successfully created."
+                    },
+                    "400": {
+                        "description": "Bad Request: Input validation error."
+                    },
+                    "500": {
+                        "description": "Internal Server Error."
+                    }
+                }
+            }
+        },
+        "/tinmanager/containerlimit": {
+            "post": {
+                "tags": [
+                    "TIN Manager"
+                ],
+                "description": "Changes the maximum number of containers that can be deployed on each virtual machine.",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "max_containers": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "max_containers"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Created: Updated successfully."
+                    },
+                    "400": {
+                        "description": "Bad Request: Input validation error."
+                    },
+                    "500": {
+                        "description": "Internal Server Error."
+                    }
+                }
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Flows Management",
+            "description": ""
+        }
+    ]
+}

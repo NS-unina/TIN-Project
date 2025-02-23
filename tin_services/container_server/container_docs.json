@@ -29,8 +29,7 @@
                                 },
                                 "service_port": {
                                     "type": "integer",
-                                    "description": "The port of the service that the container must offer",
-                                    "default": "22"
+                                    "description": "The port of the service that the container must offer"
                                 }
                             },
                             "required": [
@@ -305,6 +304,54 @@
                     },
                     "500": {
                         "description": "Internal Server Error: Unable to delete the container."
+                    }
+                }
+            }
+        },
+        "/container/update/{container_name}": {
+            "post": {
+                "tags": [
+                    "Container Management"
+                ],
+                "description": "Creates a new Docker container with the specified parameters.",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "container_name",
+                        "required": true,
+                        "type": "string",
+                        "description": "The name of the Docker container to stop.."
+                    },
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "busy": {
+                                    "type": "string",
+                                    "description": "The name of the parameter to be updated."
+                                }
+                            },
+                            "required": [
+                                "busy"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Created: Container updated."
+                    },
+                    "400": {
+                        "description": "Bad Request: Missing or invalid input data."
+                    },
+                    "500": {
+                        "description": "Internal Server Error."
                     }
                 }
             }

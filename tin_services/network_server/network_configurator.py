@@ -20,7 +20,7 @@ ovs_bridge = app.config['OVS_BRIDGE']
 
 # ********[ STARTUP ]********
 try:
-    #check if OVS exists, if not creates it
+    #checks if OVS exists, if not creates it
     if(not os.path.exists(f"/sys/class/net/{ovs_bridge}")):
         subprocess.run(["sudo", "ovs-vsctl", "add-br", ovs_bridge], check=True)
         print(f"Created OVS {ovs_bridge}")
@@ -30,7 +30,7 @@ try:
     if(not os.path.exists(f"/sys/class/net/host-veth")):
         subprocess.run(["sudo", "ovs-vsctl", "add-port", ovs_bridge, "host-veth", "--", "set", "interface", "host-veth", "type=internal"], check=True)
 
-    #check if host-veth down
+    #checks if host-veth down
     state = subprocess.check_output(["ip", "link", "show", "host-veth"], text=True)
     if ("state DOWN" in state):
         subprocess.run(["sudo", "ip", "addr", "add", IP_HOST, "dev", "host-veth"], check=True)
@@ -78,7 +78,8 @@ def create_int(veth_id):
 
     except subprocess.CalledProcessError as e:
         return jsonify({'error': str(e)}), 500
-
+    except Exception as e:
+        return jsonify({'error': e}), 500
 
 
 @app.route('/network/delete_int/<veth_id>', methods=['DELETE'])
@@ -107,6 +108,8 @@ def delete_int(veth_id):
 
     except subprocess.CalledProcessError as e:
         return jsonify({'error': str(e)}), 500
+    except Exception as e:
+        return jsonify({'error': e}), 500
 
 
 

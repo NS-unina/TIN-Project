@@ -277,6 +277,37 @@
                 }
             }
         },
+        "/container/restart/{container_name}": {
+            "post": {
+                "tags": [
+                    "Container Operations"
+                ],
+                "description": "Restarts a Docker container by its name.",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "container_name",
+                        "required": true,
+                        "type": "string",
+                        "description": "The name of the Docker container to restart."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK: Container started successfully."
+                    },
+                    "404": {
+                        "description": "Not Found: Container not found."
+                    },
+                    "500": {
+                        "description": "Internal Server Error: Unable to start the container."
+                    }
+                }
+            }
+        },
         "/container/delete/byport/{vm_port}": {
             "delete": {
                 "tags": [

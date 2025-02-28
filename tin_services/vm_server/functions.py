@@ -133,11 +133,11 @@ def sync_vm(VM_PATH, collection):
 
         except (VagrantfileNotFound, VmNotFound) as e:
             print ({"Error updating vms status": f"{e.message}"})
+        except pymongo.errors.ConnectionFailure as e:
+            print ({"Error updating vms status": "Connection to database failed."})
         except ItemNotModified as e:
             print ("Nothing to update")
             pass
-        except pymongo.errors.ConnectionFailure as e:
-            print ({"Error updating vms status": "Connection to database failed."})
         except Exception as e:
             print ({"Error updating vms status": f"Error {e}"})
 

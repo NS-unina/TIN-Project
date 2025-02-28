@@ -33,41 +33,13 @@ ONOS_AUTH_PASSWORD = app.config['ONOS_AUTH_PASSWORD']
 
 
 # ********[ STARTUP ]********
-while True:
-    try:
-        print ("Attempting to connect to vm configurator...")
-        vmList = get_vm_list(VM_SERVER_URL)
-        print(vmList)
-        if not vmList or not any(vm.get("status") == "running" for vm in vmList):
-            print ("No available vms.")
-            create_vm(VM_SERVER_URL)
-
-        vmList = get_vm_list(VM_SERVER_URL)
-
-        for vm in vmList:
-            if vm["status"] == "running":
-                IP_CONTAINER_MASTER = vm["ip"]
-                if(ping_server(f"http://{IP_CONTAINER_MASTER}:{CONTAINER_SERVER_PORT}", "container")):
-                    break
-
-        print ("\nSTARTUP DONE")
-        break
-    
-    except ServerNotRunning as e:
-        print("[ERROR] Connection to vm configurator failed. Retrying...")
-        sleep(7)
-    except Exception as e:
-        print(jsonify({"error": f"{str(e)}"}))
-        break
-
 
 # Configuration of BackgroundScheduler
 scheduler = BackgroundScheduler()
 scheduler.start()
 
-#[TODO] gestione errore connessione onos
-#scheduler.add_job(lambda: flow_cleanup(ONOS_URL, ONOS_AUTH_USERNAME, ONOS_AUTH_PASSWORD, CONTAINER_SERVER_PORT), trigger=IntervalTrigger(seconds=30))
-scheduler.add_job(lambda: vm_manager(IP_CONTAINER_MASTER, CONTAINER_SERVER_PORT, VM_SERVER_URL, MAX_CONTAINERS, UTILIZATION_LIMIT), trigger=IntervalTrigger(seconds=10))
+scheduler.add_job(lambda: flow_cleanup(ONOS_URL, ONOS_AUTH_USERNAME, ONOS_AUTH_PASSWORD, CONTAINER_SERVER_PORT), trigger=IntervalTrigger(seconds=3600))
+scheduler.add_job(lambda: vm_manager(CONTAINER_SERVER_PORT, VM_SERVER_URL, MAX_CONTAINERS, UTILIZATION_LIMIT), trigger=IntervalTrigger(seconds=30))
 
 
 
@@ -88,7 +60,6 @@ def add_tcp_flow():
     dst_port = data.get('dst_port')
     ovs_id=data.get('ovs_id')
 
-    
     try:
         #Get vmList
         vmList = get_vm_list(VM_SERVER_URL)
@@ -96,9 +67,8 @@ def add_tcp_flow():
         if not vmList or not any(vm.get("status") == "running" for vm in vmList):
             print ("No available vms.")
             create_vm(VM_SERVER_URL)
-            
-        vmList = get_vm_list(VM_SERVER_URL)
-
+            vmList = get_vm_list(VM_SERVER_URL)
+        
         #Select container master (first vm that is running)
         for vm in vmList:
             if vm["status"] == "running":
@@ -126,24 +96,24 @@ def add_tcp_flow():
 
             #Creating container 
             print ("Creating container ...")
-            #container = create_container(chosen_vm["ip"],CONTAINER_SERVER_PORT,dst_port)
+            container = create_container(chosen_vm["ip"],CONTAINER_SERVER_PORT,dst_port)
 
 
         #Set flow ip and port with the found container
         vm_ip_mac= get_vm_ip_mac_by_name (container["vm_name"], vmList)
-        flow_ip=vm_ip_mac["ip"]
-        flow_mac=vm_ip_mac["mac"]
+        container_ip=vm_ip_mac["ip"]
+        container_mac=vm_ip_mac["mac"]
         for service in container["services"]:
             if(service["service_port"]==dst_port):
-                flow_port=service["vm_port"]   
+                container_vm_port=service["vm_port"]   
 
         #Set 'busy'
-        if not set_busy(f"http://{flow_ip}:{CONTAINER_SERVER_PORT}", container["vm_name"]):
+        if not set_busy(f"http://{container_ip}:{CONTAINER_SERVER_PORT}", container["vm_name"]):
             return jsonify({'error': 'could not set container as busy'}), 500
 
         #Creating flow
-        print (f"Creating tcp flow: ip '{flow_ip}', port '{flow_port}', mac '{flow_mac}'")
-        #create_flow_tcp(ONOS_URL, ONOS_AUTH_USERNAME, ONOS_AUTH_PASSWORD, ovs_id, src_ip, dst_ip, dst_port, container_ip, container_mac,container_vm_port)
+        print (f"Creating tcp flow: ip '{container_ip}', port '{container_vm_port}', mac '{container_mac}'")
+        create_flow_tcp(ONOS_URL, ONOS_AUTH_USERNAME, ONOS_AUTH_PASSWORD, ovs_id, src_ip, dst_ip, dst_port, container_ip, container_mac, container_vm_port)
 
         return jsonify({"message":  "Flow successfully created!"}), 201
     
@@ -172,8 +142,7 @@ def add_udp_flow():
     src_port = data.get('src_port')
     dst_port = data.get('dst_port')
     ovs_id=data.get('ovs_id')
-
-    
+ 
     try:
         #Get vmList
         vmList = get_vm_list(VM_SERVER_URL)
@@ -181,9 +150,8 @@ def add_udp_flow():
         if not vmList or not any(vm.get("status") == "running" for vm in vmList):
             print ("No available vms.")
             create_vm(VM_SERVER_URL)
+            vmList = get_vm_list(VM_SERVER_URL)
             
-        vmList = get_vm_list(VM_SERVER_URL)
-
         #Select container master (first vm that is running)
         for vm in vmList:
             if vm["status"] == "running":
@@ -211,20 +179,23 @@ def add_udp_flow():
 
             #Creating container 
             print ("Creating container ...")
-            #container = create_container(chosen_vm["ip"],CONTAINER_SERVER_PORT,dst_port)
-
+            container = create_container(chosen_vm["ip"],CONTAINER_SERVER_PORT,dst_port)
 
         #Set flow ip and port with the found container
         vm_ip_mac= get_vm_ip_mac_by_name (container["vm_name"], vmList)
-        flow_ip=vm_ip_mac["ip"]
-        flow_mac=vm_ip_mac["mac"]
+        container_ip=vm_ip_mac["ip"]
+        container_mac=vm_ip_mac["mac"]
         for service in container["services"]:
             if(service["service_port"]==dst_port):
-                flow_port=service["vm_port"]
+                container_vm_port=service["vm_port"]   
+
+        #Set 'busy'
+        if not set_busy(f"http://{container_ip}:{CONTAINER_SERVER_PORT}", container["vm_name"]):
+            return jsonify({'error': 'could not set container as busy'}), 500
         
         #Creating flow
-        print (f"Creating udp flow: ip '{flow_ip}', port '{flow_port}', mac '{flow_mac}'")
-        #create_flow_udp(ONOS_URL, ONOS_AUTH_USERNAME, ONOS_AUTH_PASSWORD, ovs_id, src_ip, dst_ip, dst_port, container_ip, container_mac,container_vm_port)
+        print (f"Creating udp flow: ip '{container_ip}', port '{container_vm_port}', mac '{container_mac}'")
+        create_flow_udp(ONOS_URL, ONOS_AUTH_USERNAME, ONOS_AUTH_PASSWORD, ovs_id, src_ip, dst_ip, dst_port, container_ip, container_mac, container_vm_port)
 
         return jsonify({"message":  "Flow successfully created!"}), 201
     

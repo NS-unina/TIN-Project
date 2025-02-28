@@ -4,7 +4,6 @@ class Config:
     DEBUG = True  # Enable debug mode
     ENV = 'development'  # Can be 'development', 'testing', or 'production'
 
-    
     VM_SERVER_IP='192.168.1.32' #ip Address for vm configurator server
     VM_SERVER_PORT='5000'
 

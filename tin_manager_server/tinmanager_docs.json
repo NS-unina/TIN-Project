@@ -158,11 +158,31 @@
                     }
                 }
             }
+        },
+        "/tinmanager/ping": {
+            "get": {
+                "tags": [
+                    "TIN Manager"
+                ],
+                "description": "Returns a simple message indicating that the server is running.",
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation: Server is running."
+                    }
+                }
+            }
         }
     },
     "tags": [
         {
             "name": "Flows Management",
+            "description": ""
+        },
+        {
+            "name": "TIN Manager",
             "description": ""
         }
     ]

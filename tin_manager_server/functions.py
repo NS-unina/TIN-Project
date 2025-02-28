@@ -84,6 +84,23 @@ def create_container(vm_ip,CONTAINER_SERVER_PORT,service_port):
         raise CreateContainerFailed (f"{response.json}", error_code=response.status_code)
 
 
+def delete_container(vm_ip, CONTAINER_SERVER_PORT, vm_port):
+    
+    try:
+      #Request to container_configurator
+      url= f"http://{vm_ip}:{CONTAINER_SERVER_PORT}/container/delete/byport/{vm_port}"
+      print (f"Sending request to '{url}' ...")
+      response=requests.delete(url)
+      if (response.status_code == 200):
+        response = response.json()
+        print ("Response: ", response)
+        return response
+      else:
+        raise ContainerDeleteError ("Error deleting container.", error_code=response.status_code)
+    except requests.exceptions.ConnectionError:
+        raise ServerNotRunning ("Container Server not running.", error_code=503)
+
+
 def ping_server (SERVER_URL, server):
  
     try:
@@ -133,8 +150,9 @@ def choose_vm(vmList, containerCount, MAX_CONTAINERS):
     return chosen_vm
 
 
-def create_flow_tcp(ONOS_URL, ONOS_AUTH_USERNAME, ONOS_AUTH_PASSWORD, ovs_id,attacker_ip,forbidden_ip,forbidden_port,container_ip,container_mac,container_vm_port):
-        
+
+# ********[ FLOWS ]********
+def create_flow_tcp(ONOS_URL, ONOS_AUTH_USERNAME, ONOS_AUTH_PASSWORD, ovs_id,attacker_ip,forbidden_ip,forbidden_port,container_ip,container_mac,container_vm_port): 
 
     tcp_flow_attacker_honeypot={
     "flows": [
@@ -188,11 +206,10 @@ def create_flow_tcp(ONOS_URL, ONOS_AUTH_USERNAME, ONOS_AUTH_PASSWORD, ovs_id,att
                         "type":"TCP_DST", 
                         "tcpPort":forbidden_port
                     }
-
                 ]
             }
-              }
-          ]
+        }
+        ]
       }
 
     #Request to onos flow
@@ -247,7 +264,6 @@ def create_flow_tcp(ONOS_URL, ONOS_AUTH_USERNAME, ONOS_AUTH_PASSWORD, ovs_id,att
                         "type":"TCP_SRC", 
                         "tcpPort": container_vm_port
                     }
-
                 ]
             }
         }
@@ -263,12 +279,8 @@ def create_flow_tcp(ONOS_URL, ONOS_AUTH_USERNAME, ONOS_AUTH_PASSWORD, ovs_id,att
         raise CreateFlowFailed ("Error: Flow { honeypot -> attacker } not created.", error_code=response.status_code)
 
 
-
-
-
 def create_flow_udp(ONOS_URL, ONOS_AUTH_USERNAME, ONOS_AUTH_PASSWORD, ovs_id,attacker_ip,forbidden_ip,forbidden_port,container_ip,container_mac,container_vm_port):
         
-
     udp_flow_attacker_honeypot={
     "flows": [
         {
@@ -307,7 +319,7 @@ def create_flow_udp(ONOS_URL, ONOS_AUTH_USERNAME, ONOS_AUTH_PASSWORD, ovs_id,att
                     },
                     {
                         "type": "IP_PROTO",
-                        "protocol": 6
+                        "protocol": 17
                     },
                     {
                         "type": "IPV4_SRC",
@@ -321,7 +333,6 @@ def create_flow_udp(ONOS_URL, ONOS_AUTH_USERNAME, ONOS_AUTH_PASSWORD, ovs_id,att
                         "type":"UDP_DST", 
                         "udpPort":forbidden_port
                     }
-
                 ]
             }
               }
@@ -380,7 +391,6 @@ def create_flow_udp(ONOS_URL, ONOS_AUTH_USERNAME, ONOS_AUTH_PASSWORD, ovs_id,att
                         "type":"UDP_SRC", 
                         "udpPort": container_vm_port
                     }
-
                 ]
             }
         }
@@ -396,12 +406,25 @@ def create_flow_udp(ONOS_URL, ONOS_AUTH_USERNAME, ONOS_AUTH_PASSWORD, ovs_id,att
         raise CreateFlowFailed ("Error: Flow { honeypot -> attacker } not created.", error_code=response.status_code)
 
 
+def delete_flow(ONOS_URL, ONOS_AUTH_USERNAME, ONOS_AUTH_PASSWORD, device_id, flow_id):
+    
+    try:
+        #Request to onos flow
+        url= f"{ONOS_URL}/onos/v1/flows/{device_id}/{flow_id}"
+        print (f"Sending request to '{url}' ...")
+        response=requests.delete(url, auth=(ONOS_AUTH_USERNAME,ONOS_AUTH_PASSWORD))
+        print ("Response: ", response)
+
+        if (response.status_code != 204):
+            raise OnosDeleteFlowError (f"Error deleting flow {flow_id}.", error_code=response.status_code)
+    except requests.exceptions.ConnectionError as e:
+        print(f"error. {e}")
 
 
+# ********[ Background Functions ]********
 def flow_cleanup(ONOS_URL, ONOS_AUTH_USERNAME, ONOS_AUTH_PASSWORD, CONTAINER_SERVER_PORT):
 
     global old_packet_count
-   
     try:
         print("-----------------------------------")
         #Request to onos flow
@@ -411,12 +434,12 @@ def flow_cleanup(ONOS_URL, ONOS_AUTH_USERNAME, ONOS_AUTH_PASSWORD, CONTAINER_SER
             new_flows = response.json()
         else:
             print("Flow list not obtained.", error_code=response.status_code)
+        
         #Create dictionary
         new_packet_count={}
         for flow in new_flows["flows"]:
             if (flow["appId"] == "org.onosproject.rest" and  flow["priority"] >1 and flow.get("treatment", {}).get("instructions", [{}])[0].get("subtype")):
                 
-                #andata
                 if(flow["treatment"]["instructions"][0]["subtype"]=="TCP_DST"):
                     port=flow["treatment"]["instructions"][0]["tcpPort"]
                     ip=flow["treatment"]["instructions"][1]["ip"]
@@ -424,17 +447,15 @@ def flow_cleanup(ONOS_URL, ONOS_AUTH_USERNAME, ONOS_AUTH_PASSWORD, CONTAINER_SER
                     port=flow["treatment"]["instructions"][0]["udpPort"]
                     ip=flow["treatment"]["instructions"][1]["ip"]
 
-                #ritorno
                 elif(flow["treatment"]["instructions"][0]["subtype"]=="TCP_SRC"):
                     port=flow["selector"]["criteria"][4]["tcpPort"]
                     ip=flow["selector"]["criteria"][2]["ip"].split('/')[0]
                 elif(flow["treatment"]["instructions"][0]["subtype"]=="UDP_SRC"):
                     port=flow["selector"]["criteria"][4]["udpPort"]
                     ip=flow["selector"]["criteria"][2]["ip"].split('/')[0]
-    
 
                 print(flow["treatment"]["instructions"][0]["subtype"])
-                print("ip ",ip,"port " ,port)
+                print("ip: ", ip, "port: ", port)
                 new_packet_count[flow["id"]]={"packets":flow["packets"], "ip": ip, "port":port, "device_id": flow["deviceId"]}
 
         #Verify packet number
@@ -452,13 +473,11 @@ def flow_cleanup(ONOS_URL, ONOS_AUTH_USERNAME, ONOS_AUTH_PASSWORD, CONTAINER_SER
                             print(f"Container not deleted {e}.")
                             
                     delete_flow(ONOS_URL, ONOS_AUTH_USERNAME, ONOS_AUTH_PASSWORD, new_packet_count[id]["device_id"], id)
-
             else:
                 print("new flow")
         
         old_packet_count=new_packet_count
-
-    
+ 
     except requests.exceptions.ConnectionError as e:
         print(f"Error: Onos not reachable. {e}.")
     except Exception as e:
@@ -466,28 +485,27 @@ def flow_cleanup(ONOS_URL, ONOS_AUTH_USERNAME, ONOS_AUTH_PASSWORD, CONTAINER_SER
 
 
 
-
-
-def vm_manager(ip_container_master, CONTAINER_SERVER_PORT, VM_SERVER_URL, MAX_CONTAINERS, UTILIZATION_LIMIT):
+def vm_manager(CONTAINER_SERVER_PORT, VM_SERVER_URL, MAX_CONTAINERS, UTILIZATION_LIMIT):
 
     try:
-        
         vmList = get_vm_list(VM_SERVER_URL)
         vmCount=0
         for vm in vmList:
             if vm["status"] == "running":
                 vmCount+=1
 
-
-
+        for vm in vmList:
+            if vm["status"] == "running":
+                ip_container_master = vm["ip"]
+                if(ping_server(f"http://{ip_container_master}:{CONTAINER_SERVER_PORT}", "container")):
+                    break
+  
         containerCount = get_container_count(f"http://{ip_container_master}:{CONTAINER_SERVER_PORT}")
         total_slots= (vmCount)*MAX_CONTAINERS
 
         if total_slots== 0:
             create_vm(VM_SERVER_URL)
         else:
-        
-
             occupied_slots=0
             for vm in containerCount:
                 occupied_slots+= int(containerCount[vm])
@@ -497,7 +515,7 @@ def vm_manager(ip_container_master, CONTAINER_SERVER_PORT, VM_SERVER_URL, MAX_CO
             print ("Total number of containers: ", occupied_slots)
 
             utilization_percentage= (occupied_slots/total_slots)*100
-            print("Total VM Utilization %: ",utilization_percentage)
+            print("Total VM Utilization %: ", utilization_percentage)
 
             if (utilization_percentage > UTILIZATION_LIMIT):
                 print(f"Utilization percentage over the treshold ({UTILIZATION_LIMIT}%)... creating vm")
@@ -507,44 +525,3 @@ def vm_manager(ip_container_master, CONTAINER_SERVER_PORT, VM_SERVER_URL, MAX_CO
         print(f"Error: Container configurator or Vm configurator not reachable.")
     except Exception as e:
         print(f"Error {e}.")
-    
-
-
-
-
-
-
-
-
-
-    
-def delete_container(vm_ip, CONTAINER_SERVER_PORT, vm_port):
-    
-    try:
-      #Request to container_configurator
-      url= f"http://{vm_ip}:{CONTAINER_SERVER_PORT}/container/delete/byport/{vm_port}"
-      print (f"Sending request to '{url}' ...")
-      response=requests.delete(url)
-      if (response.status_code == 200):
-        response = response.json()
-        print ("Response: ", response)
-        return response
-      else:
-        raise ContainerDeleteError ("Error deleting container.", error_code=response.status_code)
-    except requests.exceptions.ConnectionError:
-        raise ServerNotRunning ("Container Server not running.", error_code=503)
-
-def delete_flow(ONOS_URL, ONOS_AUTH_USERNAME, ONOS_AUTH_PASSWORD, device_id, flow_id):
-    
-    try:
-        #Request to onos flow
-        url= f"{ONOS_URL}/onos/v1/flows/{device_id}/{flow_id}"
-        print (f"Sending request to '{url}' ...")
-        response=requests.delete(url, auth=(ONOS_AUTH_USERNAME,ONOS_AUTH_PASSWORD))
-        print ("Response: ", response)
-
-        if (response.status_code != 204):
-            raise OnosDeleteFlowError (f"Error deleting flow {flow_id}.", error_code=response.status_code)
-    except requests.exceptions.ConnectionError as e:
-        print(f"error. {e}")
-

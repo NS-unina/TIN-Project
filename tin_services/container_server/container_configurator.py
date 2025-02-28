@@ -216,7 +216,7 @@ def get_container_by_service(service_port):
     except pymongo.errors.ConnectionFailure as e:
         return jsonify({'error': 'Connection to database failed.'}), 500
     except Exception as e:
-        return jsonify({"error": f"Error in reading container list. {e}"}), 500
+        return jsonify({"error": e}), 500
     
 
 @app.route('/container/start/<container_name>', methods=['POST'])
@@ -247,7 +247,7 @@ def start_container(container_name):
     except pymongo.errors.ConnectionFailure as e:
         return jsonify({'error': 'Connection to database failed.'}), 500
     except Exception as e:
-        return jsonify({"error": f"Error in reading container list. {e}"}), 500
+        return jsonify({"error": e}), 500
 
     
 
@@ -279,7 +279,38 @@ def stop_container(container_name):
     except pymongo.errors.ConnectionFailure as e:
         return jsonify({'error': 'Connection to database failed.'}), 500
     except Exception as e:
-        return jsonify({"error": f"Error in reading container list. {e}"}), 500
+        return jsonify({"error": e}), 500
+    
+
+@app.route('/container/restart/<container_name>', methods=['POST'])
+def restart_container(container_name):
+  
+    try:
+        validated_data = ContainerNameSchema().load({"container_name":container_name})
+    except ValidationError as e:
+        return jsonify({"error": f"{e}"}), 400
+
+    try:
+        #Check if container exists
+        if not check_if_value_field_exists("name", container_name, containerCollection):
+            return jsonify({'error': f"Container name {container_name} doesn't exists."})
+ 
+        container = client.containers.get(container_name)
+        container.restart()
+
+        #refresh status
+        container = client.containers.get(container_name)
+        update_item_list (container_name, "status", container.status, containerCollection)
+        return jsonify({'Container restarted successfully.': f'{container_name}'}), 200
+    
+    except (ContainerNotFound, docker.errors.NotFound) as e:
+        return jsonify ({'error': f'Container {container_name} not found'}), 404
+    except ItemNotModified as e:
+        return jsonify ({'message': f"{e.message}"}), 200
+    except pymongo.errors.ConnectionFailure as e:
+        return jsonify({'error': 'Connection to database failed.'}), 500
+    except Exception as e:
+        return jsonify({"error": e}), 500
     
 
 #returns the number of containers in each vm 
@@ -292,7 +323,7 @@ def container_number():
         return jsonify(result_dict), 200
 
     except Exception as e:
-        return jsonify({"error": f"Error in reading container list. {e}"}), 500
+        return jsonify({"error": e}), 500
     
 
 @app.route('/container/update/<container_name>', methods=['POST'])

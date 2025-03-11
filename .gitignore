@@ -6,6 +6,7 @@ tin_services/vm/*/
 *.cfg
 include/
 share/
+tin_services/vm/mongo_auth.sh
 
 ### Flask ###
 instance/*

@@ -7,7 +7,7 @@
       "name": "mongo",
       "service_port": "27017",
       "container_port": "27017",
-      "priority": "10"
+      "priority": 5
     }
   ]
 },
@@ -33,91 +33,91 @@
       "name": "ftp",
       "service_port": "21",
       "container_port": "21",
-      "priority": "10"
+      "priority": 5
     },
     {
       "name": "tftp",
       "service_port": "69",
       "container_port": "69",
-      "priority": "10"
+      "priority": 5
     },
     {
       "name": "wins",
       "service_port": "42",
       "container_port": "42",
-      "priority": "10"
+      "priority": 5
     },
     {
       "name": "http",
       "service_port": "80",
       "container_port": "80",
-      "priority": "10"
+      "priority": 5
     },
     {
       "name": "rpc",
       "service_port": "135",
       "container_port": "135",
-      "priority": "10"
+      "priority": 5
     },
     {
       "name": "https",
       "service_port": "443",
       "container_port": "443",
-      "priority": "10"
+      "priority": 5
     },
     {
       "name": "smb",
       "service_port": "445",
       "container_port": "445",
-      "priority": "10"
+      "priority": 5
     },
     {
       "name": "microsoftsql",
       "service_port": "1433",
       "container_port": "1433",
-      "priority": "10"
+      "priority": 5
     },
     {
       "name": "pptp",
       "service_port": "1723",
       "container_port": "1723",
-      "priority": "10"
+      "priority": 5
     },
     {
       "name": "mqtt",
       "service_port": "1883",
       "container_port": "1883",
-      "priority": "10"
+      "priority": 5
     },
     {
       "name": "ssdp",
       "service_port": "1900",
       "container_port": "1900",
-      "priority": "10"
+      "priority": 5
     },
     {
       "name": "mysql",
       "service_port": "3306",
       "container_port": "3306",
-      "priority": "10"
+      "priority": 5
     },
     {
       "name": "sip",
       "service_port": "5060",
       "container_port": "5060",
-      "priority": "10"
+      "priority": 5
     },
     {
       "name": "sip-tls",
       "service_port": "5061",
       "container_port": "5061",
-      "priority": "10"
+      "priority": 5
     },
     {
       "name": "memecachedb",
       "service_port": "11211",
       "container_port": "11211",
-      "priority": "10"
+      "priority": 5
     }
   ]
 },
@@ -135,7 +135,7 @@
       "name": "rdp",
       "service_port": "3389",
       "container_port": "3389",
-      "priority": "10"
+      "priority": 5
     }
   ]
 },
@@ -181,7 +181,7 @@
       "name": "smtp",
       "service_port": "587",
       "container_port": "8888",
-      "priority": "10"
+      "priority": 5
     }
   ]
 },
@@ -194,7 +194,7 @@
       "name": "telnet",
       "service_port": "23",
       "container_port": "23",
-      "priority": "10"
+      "priority": 5
     }
   ]
 },
@@ -207,85 +207,85 @@
       "name": "pop3",
       "service_port": "110",
       "container_port": "110",
-      "priority": "10"
+      "priority": 5
     },
     {
       "name": "pop3s",
       "service_port": "995",
       "container_port": "995",
-      "priority": "10"
+      "priority": 5
     },
     {
       "name": "smtp",
       "service_port": "25",
       "container_port": "25",
-      "priority": "10"
+      "priority": 5
     },
     {
       "name": "http",
       "service_port": "80",
       "container_port": "80",
-      "priority": "10"
+      "priority": 5
     },
     {
       "name": "https",
       "service_port": "443",
       "container_port": "443",
-      "priority": "10"
+      "priority": 5
     },
     {
       "name": "vnc",
       "service_port": "5900",
       "container_port": "5900",
-      "priority": "10"
+      "priority": 5
     },
     {
       "name": "telnet",
       "service_port": "23",
       "container_port": "23",
-      "priority": "10"
+      "priority": 5
     },
     {
       "name": "ftp",
       "service_port": "21",
       "container_port": "21",
-      "priority": "10"
+      "priority": 5
     },
     {
       "name": "imap",
       "service_port": "143",
       "container_port": "143",
-      "priority": "10"
+      "priority": 5
     },
     {
       "name": "mysql",
       "service_port": "3306",
       "container_port": "3306",
-      "priority": "10"
+      "priority": 5
     },
     {
       "name": "socks5",
       "service_port": "1080",
       "container_port": "1080",
-      "priority": "10"
+      "priority": 5
     },
     {
       "name": "ssh",
       "service_port": "22",
       "container_port": "2222",
-      "priority": "10"
+      "priority": 5
     },
     {
       "name": "postgres",
       "service_port": "5432",
       "container_port": "5432",
-      "priority": "10"
+      "priority": 5
     },
     {
       "name": "imaps",
       "service_port": "993",
       "container_port": "993",
-      "priority": "10"
+      "priority": 5
     }
   ]
 },
@@ -298,13 +298,13 @@
       "name": "dns",
       "service_port": "5053/udp",
       "container_port": "5053/udp",
-      "priority": "10"
+      "priority": 5
     },
     {
       "name": "dns",
       "service_port": "5053/tcp",
       "container_port": "5053/tcp",
-      "priority": "10"
+      "priority": 5
     }
   ]
 },
@@ -317,7 +317,7 @@
       "name": "ssh",
       "service_port": "22",
       "container_port": "2222",
-      "priority": "10"
+      "priority": 10
     }
   ]
 }]

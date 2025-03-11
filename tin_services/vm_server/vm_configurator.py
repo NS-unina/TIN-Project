@@ -33,8 +33,8 @@ DEFAULT_NETWORK = app.config['DEFAULT_NETWORK']
 EXCLUDED_ADDRESSES = app.config['EXCLUDED_ADDRESSES']
 
 #Database connection
-DATABASE_CONNECTION = app.config['DATABASE_CONNECTION']
-
+DATABASE_IP = app.config['DATABASE_IP']
+DATABASE_PORT = app.config['DATABASE_PORT']
 
 
 # ********[ STARTUP ]********
@@ -42,7 +42,10 @@ while True:
     try:
         print ("Attempting to connect to database and network server...")
         #Connection to database
-        mongo = pymongo.MongoClient(DATABASE_CONNECTION)
+        username = os.getenv("MONGO_USER")
+        password = os.getenv("MONGO_PASS")
+        uri = f"mongodb://{username}:{password}@{DATABASE_IP}:{DATABASE_PORT}/?authSource=admin"
+        mongo = pymongo.MongoClient(uri)
         database = mongo["tinDatabase"] 
         vmCollection = database["vmList"]
         containerCollection = database["containerList"]
@@ -108,6 +111,11 @@ def create_vm():
     vm_ram = data.get ('ram') or 1024 #default 1024 MB  
       
     try:
+        #Check if vm exist
+        check_vm = vmCollection.find_one({"name": vm_name}, {"_id": 0})
+        if check_vm:
+            return jsonify({"error": f"VM '{vm_name}' already exist"}), 400
+        
         #Generate IP and MAC
         default_ip = generate_default_ip(vmCollection, DEFAULT_NETWORK, EXCLUDED_ADDRESSES)
         vm_ip=data.get('ip') or f'{default_ip}'
@@ -171,7 +179,7 @@ def delete_vm(vm_name):
             return jsonify({"error": f"VM '{vm_name}' folder doesn't exist"}), 404
 
         #Find associated interface
-        vm_id = search_item_vm_list(vm_name, "id",vmCollection)
+        vm_id = search_item_vm_list(vm_name, "id", vmCollection)
 
         #Delete network interfaces for the VM
         url= f"{NET_SERVER_URL}/network/delete_int/{vm_id}"

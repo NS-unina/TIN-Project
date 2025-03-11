@@ -33,8 +33,8 @@ DEFAULT_NETWORK = app.config['DEFAULT_NETWORK']
 EXCLUDED_ADDRESSES = app.config['EXCLUDED_ADDRESSES']
 
 #Database connection
-DATABASE_CONNECTION = app.config['DATABASE_CONNECTION']
-
+DATABASE_IP = app.config['DATABASE_IP']
+DATABASE_PORT = app.config['DATABASE_PORT']
 
 
 # ********[ STARTUP ]********
@@ -42,7 +42,10 @@ while True:
     try:
         print ("Attempting to connect to database and network server...")
         #Connection to database
-        mongo = pymongo.MongoClient(DATABASE_CONNECTION)
+        username = os.getenv("MONGO_USER")
+        password = os.getenv("MONGO_PASS")
+        uri = f"mongodb://{username}:{password}@{DATABASE_IP}:{DATABASE_PORT}/?authSource=admin"
+        mongo = pymongo.MongoClient(uri)
         database = mongo["tinDatabase"] 
         vmCollection = database["vmList"]
         containerCollection = database["containerList"]

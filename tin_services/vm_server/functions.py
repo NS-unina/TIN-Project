@@ -33,6 +33,8 @@ def create_vagrantfile(vagrantfile_path,name,box,cpus,ram,ip,mac,interface):
         end
     
         config.vm.provision "shell", path: "../init_vm.sh"
+        config.vm.provision "shell", path: "../mongo_auth.sh"
+
         config.vm.provision "docker"
 
         #Files container server

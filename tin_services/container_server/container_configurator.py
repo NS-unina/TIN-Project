@@ -9,6 +9,7 @@ import docker
 import requests
 import json
 import pymongo
+import os
 from flask_cors import CORS
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -19,22 +20,25 @@ app = Flask (__name__)
 app.config.from_object(DevelopmentConfig)
 CORS(app,resources={r'/*':{'origins':'*'}})
 
+
+#Database
+DATABASE_IP = app.config['DATABASE_IP']
+DATABASE_PORT = app.config['DATABASE_PORT']
+
+
+
+# ********[ STARTUP ]********
 try:
-    DATABASE_CONNECTION = app.config['DATABASE_CONNECTION']
-    mongo = pymongo.MongoClient(DATABASE_CONNECTION, serverSelectionTimeoutMS=10000)
+    username = os.getenv("MONGO_USER")
+    password = os.getenv("MONGO_PASS")
+    uri = f"mongodb://{username}:{password}@{DATABASE_IP}:{DATABASE_PORT}/?authSource=admin"
+    mongo = pymongo.MongoClient(uri, serverSelectionTimeoutMS=10000)
     database = mongo["tinDatabase"] 
     containerCollection= database["containerList"]
     serviceCollection= database["serviceList"]
 except pymongo.errors.ConnectionFailure as e:
     print('error: Connection to database failed.')
 
-#Server Address for network configuration 
-VM_SERVER_URL=f"http://{app.config['VM_SERVER_IP']}:{app.config['VM_SERVER_PORT']}"
-
-
-# ********[ STARTUP ]********
-
-    
 
 
 # Configuration of BackgroundScheduler

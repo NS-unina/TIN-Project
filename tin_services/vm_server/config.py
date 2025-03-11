@@ -5,7 +5,8 @@ class Config:
     ENV = 'development'  # Can be 'development', 'testing', or 'production'
 
     VM_PATH = '../vm' #Directory for vms
-    DATABASE_CONNECTION = "mongodb://0.0.0.0:27017/"
+    DATABASE_IP = "0.0.0.0"
+    DATABASE_PORT = "27017"
 
     NET_SERVER_IP="127.0.0.1" #ip Address for network configurator server
     NET_SERVER_PORT="5001" #Port for network configurator server

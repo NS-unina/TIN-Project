@@ -12,29 +12,28 @@ WORK IN PROGRESS
 ### Requirements
 
 
-In order to execute the project you need to install Open vSwitch, Vagrant, VirtualBox
+In order to execute the project you need to install Open vSwitch, Vagrant, VirtualBox, Python3, ONOS, Docker.
 
-### Setup
+### Setup Virtual Environments
 
 #### Create and Activate the virtual environment:
 
-Inside the directory:
+Inside the main directory create three virtual environment (named: *tin_services*, *tin_manager_server* and *client*):
 
 ```
 python3 -m venv <name_of_the_environment>
-source bin/activate
 ```
 
 #### Install the Requirements:
 
-Backend Requirements:
+For all the three virtual environment, install the requirements:
 
 ```
-cd /server_flask
+cd /<name_of_the_environment>
 pip install -r requirements.txt
 ```
 
-Frontend Requirements:
+Additionally, inside the *client* folder, install also the frontend requirements:
 
 ```
 cd /client
@@ -42,22 +41,45 @@ nodeenv -p
 npm install
 ```
 
-#### Run the backend servers
+#### Install Database
+Run the following command to pull and run the mongodb docker image:
+```
+docker pull mongo:latest
+docker volume create mongodata
+docker run -d -v tincan:/data/db -p 27017:27017 --name tindb -e MONGO_INITDB_ROOT_USERNAME=<user> -e MONGO_INITDB_ROOT_PASSWORD=<passwd> mongo:latest --port 27017
+```
 
-```
-cd /server_flask
-flask --app network_configurator.py -p 5001
-```
+## Startup
 
+### Run the backend servers
+
+#### Virtual Machine configurator
 ```
-cd /server_flask
+cd /tin_services
+source bin/activate
 flask --app vm_configurator.py -p 5000
 ```
 
-#### Run the frontend server
+#### Network configurator
+```
+cd /tin_services
+source bin/activate
+flask --app network_configurator.py -p 5001
+```
+
+#### TIN Manager
+```
+cd /tin_manager_server
+source bin/activate
+flask --app tin_manager.py -p 5003
+```
+
+
+### Run the frontend server
 
 ```
-cd /server_flask/client
+cd /client
+source bin/activate
 npm run dev
 ```
 

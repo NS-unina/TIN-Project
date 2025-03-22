@@ -84,8 +84,7 @@ npm run dev
 ```
 
 ## Architecture
-
-![architecture](https://github.com/user-attachments/assets/83c9e3fd-7039-4325-973b-8cbe2c8d7749)
+![project_arch](https://github.com/user-attachments/assets/160fe936-f892-4b96-9699-30469048fc0d)
 
 
 ## Authors
